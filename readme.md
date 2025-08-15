@@ -1,22 +1,56 @@
 # Expo Supabase Starter
 
-![social-preview-dark](https://github.com/user-attachments/assets/9697a7da-10aa-4661-bb76-b5bc0dd611f0)
-
 ## Introduction
 
-This repository serves as a comprehensive starter project for developing React Native and Expo applications with Supabase as the backend. It integrates various technologies such as Expo Router for navigation, Tailwind CSS for styling, React-Hook-Form for form handling, Zod for schema validation, and TypeScript for type safety. By leveraging these powerful tools, this starter template provides a robust foundation for building modern, scalable, and efficient mobile applications.
+This repository serves as a comprehensive starter project for developing React Native and Expo applications with Supabase as the backend.
 
 #### Disclaimer
 
 This is not supposed to be a template, boilerplate or a framework. It is an opinionated guide that shows how to do some things in a certain way. You are not forced to do everything exactly as it is shown here, decide what works best for you and your team and stay consistent with your style.
 
-## Table of Contents
+## Get Started
 
-- [💻 Application Overview](docs/application-overview.md)
-- [⚙️ Project Configuration](docs/project-configuration.md)
-- [🗄️ Project Structure](docs/project-structure.md)
-- [🧱 Components And Styling](docs/components-and-styling.md)
-- [🗃️ State Management](docs/state-management.md)
+1. Configure Supabase:
+
+- If you haven't already, create an new account on [Supabase](https://supabase.com/).
+- Create a new project and obtain your Supabase Project URL and API key.
+
+Note: By default Supabase Auth requires email verification before a session is created for the users. To support email verification you need to go to the [Email Templates](https://supabase.com/dashboard/project/_/auth/templates) page. Select the project that you just created and replace the Message Body with the following:
+
+```html
+<h2>Confirm your signup</h2>
+
+<p>{{ .Token }}</p>
+```
+
+2. Clone the repository:
+
+```bash
+git clone https://github.com/FlemingVincent/expo-supabase-starter.git
+```
+
+3. Navigate to the project directory:
+
+```bash
+cd expo-supabase-starter
+```
+
+4. Replace environment variables:
+
+- Rename `.env.example` to `.env`
+- Update the `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` variables in the `.env` file with your Supabase URL and API key respectively.
+
+5. Install the required dependencies:
+
+```bash
+bun install
+```
+
+6. Start the Expo development server:
+
+```bash
+npx expo start --clear --reset-cache
+```
 
 ## Contributing
 
