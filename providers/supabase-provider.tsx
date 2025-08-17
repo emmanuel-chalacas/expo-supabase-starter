@@ -11,9 +11,7 @@ interface SupabaseProviderProps {
   children: React.ReactNode;
 }
 
-export const SupabaseProvider: React.FC<SupabaseProviderProps> = ({
-  children,
-}) => {
+export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
   const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
   const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_KEY!;
 

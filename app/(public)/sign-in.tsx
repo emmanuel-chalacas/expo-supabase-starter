@@ -1,5 +1,5 @@
 import React from "react";
-import { Text, TextInput, Button, View } from "react-native";
+import { Text, TextInput, Button, View, ScrollView } from "react-native";
 
 import { router } from "expo-router";
 
@@ -25,8 +25,11 @@ export default function Page() {
   };
 
   return (
-    <View style={{ display: "flex", flex: 1 }}>
-      <Text>Sign in</Text>
+    <ScrollView
+      automaticallyAdjustsScrollIndicatorInsets
+      contentInsetAdjustmentBehavior="automatic"
+      contentContainerStyle={{ padding: 16, gap: 8 }}
+    >
       <TextInput
         autoCapitalize="none"
         value={email}
@@ -50,6 +53,6 @@ export default function Page() {
         <Text>Don&apos;t have an account? </Text>
         <Text onPress={() => router.replace("/sign-up")}>Sign up</Text>
       </View>
-    </View>
+    </ScrollView>
   );
 }

@@ -7,6 +7,8 @@ export default function ProtectedLayout() {
         name="index"
         options={{
           title: "Home",
+          headerTransparent: true,
+          headerLargeTitle: true,
         }}
       />
     </Stack>

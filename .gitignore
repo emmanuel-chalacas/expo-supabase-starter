@@ -1,5 +1,7 @@
 node_modules/
 .expo/
+.vscode/
+.github/
 dist/
 npm-debug.*
 *.jks
@@ -11,6 +13,9 @@ npm-debug.*
 web-build/
 
 .env
+
+# iOS
+ios/
 
 # macOS
 .DS_Store

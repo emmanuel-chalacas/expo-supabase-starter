@@ -1,4 +1,4 @@
-import { Button, View } from "react-native";
+import { Button, ScrollView } from "react-native";
 
 import { useSupabase } from "@/hooks/useSupabase";
 
@@ -14,15 +14,14 @@ export default function Page() {
   };
 
   return (
-    <View
-      style={{
-        display: "flex",
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
+    <ScrollView
+      automaticallyAdjustsScrollIndicatorInsets
+      contentInsetAdjustmentBehavior="automatic"
+      contentContainerStyle={{
+        padding: 16,
       }}
     >
       <Button title="Sign Out" onPress={handleSignOut} />
-    </View>
+    </ScrollView>
   );
 }

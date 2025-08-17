@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Text, TextInput, Button, View } from "react-native";
+import { Text, TextInput, Button, View, ScrollView } from "react-native";
 
 import { router } from "expo-router";
 
@@ -42,51 +42,50 @@ export default function Page() {
 
   if (pendingVerification) {
     return (
-      <>
-        <Text>Verify your email</Text>
+      <ScrollView
+        automaticallyAdjustsScrollIndicatorInsets
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{ padding: 16, gap: 8 }}
+      >
         <TextInput
           value={token}
           placeholder="Enter your verification code"
           onChangeText={(token) => setToken(token)}
         />
         <Button title="Verify" onPress={onVerifyPress} />
-      </>
+      </ScrollView>
     );
   }
 
   return (
-    <View
-      style={{
-        display: "flex",
-        flex: 1,
-      }}
+    <ScrollView
+      automaticallyAdjustsScrollIndicatorInsets
+      contentInsetAdjustmentBehavior="automatic"
+      contentContainerStyle={{ padding: 16, gap: 8 }}
     >
-      <>
-        <Text>Sign up</Text>
-        <TextInput
-          autoCapitalize="none"
-          value={email}
-          placeholder="Enter email"
-          onChangeText={(email) => setEmail(email)}
-        />
-        <TextInput
-          value={password}
-          placeholder="Enter password"
-          secureTextEntry={true}
-          onChangeText={(password) => setPassword(password)}
-        />
-        <Button title="Continue" onPress={onSignUpPress} />
-        <View
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "center",
-          }}
-        >
-          <Text>Already have an account? </Text>
-          <Text onPress={() => router.replace("/sign-in")}>Sign in</Text>
-        </View>
-      </>
-    </View>
+      <TextInput
+        autoCapitalize="none"
+        value={email}
+        placeholder="Enter email"
+        onChangeText={(email) => setEmail(email)}
+      />
+      <TextInput
+        value={password}
+        placeholder="Enter password"
+        secureTextEntry={true}
+        onChangeText={(password) => setPassword(password)}
+      />
+      <Button title="Continue" onPress={onSignUpPress} />
+      <View
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "center",
+        }}
+      >
+        <Text>Already have an account? </Text>
+        <Text onPress={() => router.replace("/sign-in")}>Sign in</Text>
+      </View>
+    </ScrollView>
   );
 }

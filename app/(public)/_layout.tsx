@@ -7,18 +7,25 @@ export default function PublicLayout() {
         name="welcome"
         options={{
           title: "Welcome",
+          headerTransparent: true,
         }}
       />
       <Stack.Screen
         name="sign-up"
         options={{
           title: "Sign Up",
+          headerTransparent: true,
+          headerLargeTitle: true,
+          headerBackButtonDisplayMode: "minimal",
         }}
       />
       <Stack.Screen
         name="sign-in"
         options={{
           title: "Sign In",
+          headerTransparent: true,
+          headerLargeTitle: true,
+          headerBackButtonDisplayMode: "minimal",
         }}
       />
     </Stack>
