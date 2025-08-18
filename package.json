@@ -8,7 +8,30 @@
 		"android": "expo run:android",
 		"ios": "expo run:ios",
 		"lint": "eslint . --fix",
-		"generate-colors": "node ./scripts/generate-colors.js && eslint ./constants/colors.ts --fix"
+		"generate-colors": "node ./scripts/generate-colors.js && eslint ./constants/colors.ts --fix",
+		"supa:login": "supabase login",
+		"supa:init": "supabase init",
+		"supa:link": "supabase link --project-ref %SUPABASE_PROJECT_REF%",
+		"db:local:up": "supabase start",
+		"db:local:reset": "supabase db reset",
+		"db:local:verify": "node scripts/run-sql.js docs/sql/stage2-verify.sql",
+		"db:migration:new": "supabase migration new",
+		"db:push": "supabase db push",
+		"db:remote:verify": "node scripts/run-sql.js docs/sql/stage2-verify.sql",
+"db:local:verify:stage3": "node scripts/run-sql.js docs/sql/stage3-verify.sql",
+"db:local:test:stage3": "node scripts/run-sql.js docs/sql/stage3-policy-tests.sql",
+"db:remote:verify:stage3": "node scripts/run-sql.js docs/sql/stage3-verify.sql",
+"db:remote:test:stage3": "node scripts/run-sql.js docs/sql/stage3-policy-tests.sql",
+	     "db:local:verify:stage4": "node scripts/run-sql.js docs/sql/stage4-verify.sql",
+	     "db:local:test:stage4": "node scripts/run-sql.js docs/sql/stage4-smoke-tests.sql",
+	     "db:remote:verify:stage4": "node scripts/run-sql.js docs/sql/stage4-verify.sql --remote",
+	     "db:remote:test:stage4": "node scripts/run-sql.js docs/sql/stage4-smoke-tests.sql --remote",
+	     "db:local:verify:stage5": "node scripts/run-sql.js docs/sql/stage5-status-verify.sql",
+	     "db:local:test:stage5": "node scripts/run-sql.js docs/sql/stage5-status-smoke-tests.sql",
+	     "db:remote:verify:stage5": "node scripts/run-sql.js docs/sql/stage5-status-verify.sql --remote",
+	     "db:remote:test:stage5": "node scripts/run-sql.js docs/sql/stage5-status-smoke-tests.sql --remote",
+	     "db:run:backfill:memberships": "node scripts/run-sql.js -e \"select public.fn_projects_membership_backfill();\"",
+	     "smoke:provider": "node scripts/provider-smoke.js"
 	},
 	"dependencies": {
 		"@hookform/resolvers": "^5.0.1",
@@ -22,11 +45,14 @@
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"expo": "~53.0.8",
+		"expo-auth-session": "~6.2.1",
 		"expo-constants": "~17.1.6",
 		"expo-dev-client": "~5.1.8",
 		"expo-image": "~2.1.7",
 		"expo-linking": "~7.1.4",
+		"expo-random": "^14.0.1",
 		"expo-router": "~5.0.7",
+		"expo-secure-store": "~14.2.3",
 		"expo-splash-screen": "~0.30.10",
 		"expo-status-bar": "~2.2.3",
 		"expo-system-ui": "~5.0.7",
@@ -36,9 +62,11 @@
 		"react-hook-form": "^7.55.0",
 		"react-native": "0.79.2",
 		"react-native-gesture-handler": "~2.24.0",
+		"react-native-get-random-values": "^1.11.0",
 		"react-native-reanimated": "~3.17.3",
 		"react-native-safe-area-context": "5.4.0",
 		"react-native-screens": "~4.10.0",
+		"react-native-url-polyfill": "^2.0.0",
 		"react-native-web": "^0.20.0",
 		"tailwind-merge": "^3.2.0",
 		"tailwindcss": "~3.4.17",
@@ -52,7 +80,11 @@
 		"eslint-config-expo": "~9.2.0",
 		"eslint-config-prettier": "^10.1.2",
 		"eslint-plugin-prettier": "^5.2.6",
+		"pg": "^8.16.3",
+		"dotenv": "^16.4.5",
+		"toml": "^3.0.0",
 		"prettier": "^3.5.3",
+		"supabase": "^2.34.3",
 		"typescript": "~5.8.3"
 	},
 	"expo": {
@@ -62,5 +94,6 @@
 			]
 		}
 	},
-	"private": true
+	"private": true,
+	"packageManager": "yarn@1.22.22"
 }

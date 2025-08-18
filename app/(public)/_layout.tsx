@@ -47,6 +47,7 @@ export default function PublicLayout() {
 					gestureEnabled: true,
 				}}
 			/>
+<Stack.Screen name="signout" />
 		</Stack>
 	);
 }

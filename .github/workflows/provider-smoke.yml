@@ -1,0 +1,37 @@
+name: Provider Smoke
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    env:
+      EXPECTED_PROVIDER: ${{ vars.EXPECTED_PROVIDER || 'oidc' }}
+      EXPO_PUBLIC_SUPABASE_OIDC_PROVIDER: ${{ vars.EXPO_PUBLIC_SUPABASE_OIDC_PROVIDER }}
+      EXPO_PUBLIC_ENABLE_OKTA_AUTH: ${{ vars.EXPO_PUBLIC_ENABLE_OKTA_AUTH }}
+      EXPO_PUBLIC_OKTA_ISSUER: ${{ secrets.EXPO_PUBLIC_OKTA_ISSUER }}
+      EXPO_PUBLIC_OKTA_END_SESSION_REDIRECT: ${{ vars.EXPO_PUBLIC_OKTA_END_SESSION_REDIRECT }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 18.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install (optional)
+        shell: bash
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            echo "No package-lock.json; skipping npm ci"
+          fi
+
+      - name: Provider smoke test
+        run: npm run smoke:provider

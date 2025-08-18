@@ -1,0 +1,25 @@
+# Supabase CLI configuration for Omnivia
+# This file is used by the Supabase CLI for local development and linking to a remote project.
+# Set project_id after linking via: yarn supa:link (or set SUPABASE_PROJECT_REF env var)
+
+project_id = "ircvekvvthacbvtrrivv" # set by linking to remote project
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[studio]
+port = 54323
+
+[inbucket]
+port = 54324
+
+# Removed deprecated edge_runtime section; Supabase CLI >=2.34 no longer accepts 'port' here

@@ -1,0 +1,85 @@
+name: Supabase Migrations
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - uses: supabase/setup-cli@v1
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Login and link
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          set -e
+          supabase login --token "${SUPABASE_ACCESS_TOKEN}"
+          supabase link --project-ref "${SUPABASE_PROJECT_REF}"
+
+      - name: Push migrations
+        run: supabase db push
+
+      - name: Remote verify via runner
+        shell: bash
+        env:
+          # Provide one of the following:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}           # Preferred: full Postgres URL (sslmode=require enforced if missing)
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }} # Fallback: postgres password used with project_id from supabase/config.toml
+        run: yarn db:remote:verify
+
+      - name: Remote Stage 3 verify
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: yarn db:remote:verify:stage3
+
+      - name: Remote Stage 3 policy tests
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: yarn db:remote:test:stage3
+      - name: Remote Stage 4 verify
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: yarn db:remote:verify:stage4
+
+      - name: Remote Stage 4 smoke tests
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: yarn db:remote:test:stage4
+
+      - name: Remote Stage 5 verify
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: yarn db:remote:verify:stage5
+
+      - name: Remote Stage 5 smoke tests
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: yarn db:remote:test:stage5
