@@ -23,11 +23,20 @@ const ROWS_MIN = 1;
 const ROWS_MAX = 5000;
 
 const REQUIRED_TOP_LEVEL_KEYS = ['tenant_id', 'source', 'batch_id', 'rows'] as const;
+/**
+ * Stage 6 ROW_KEYS ordering:
+ * - Mirrors SQL helper ordering in [supabase/migrations/20250817231500_stage4_import.sql](supabase/migrations/20250817231500_stage4_import.sql:243)
+ * - Inserted suburb,state immediately after address (address group)
+ * - Inserted practical_completion_notified immediately before practical_completion_certified (milestone group)
+ * - Removed deprecated fields: development_type, rm_preferred_username
+ * Keeping importer and SQL in sync until Task 4 replaces the SQL helper.
+ */
 const ROW_KEYS = [
   'stage_application',
   'address',
+  'suburb',
+  'state',
   'eFscd',
-  'development_type',
   'build_type',
   'delivery_partner',
   'fod_id',
@@ -40,11 +49,11 @@ const ROW_KEYS = [
   'longitude',
   'relationship_manager',
   'deployment_specialist',
-  'rm_preferred_username',
   'stage_application_created',
   'developer_design_submitted',
   'developer_design_accepted',
   'issued_to_delivery_partner',
+  'practical_completion_notified',
   'practical_completion_certified',
   'delivery_partner_pc_sub',
   'in_service',
@@ -159,21 +168,81 @@ function toFloatOrNull(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/**
+ * String normalization to nullable: trim; blanks -> null
+ * Spec ref: Strings in Task 3 — address, suburb, state, build_type, fod_id, relationship_manager, deployment_specialist
+ *   [docs/product/projects-data-field-inventory.md](../../../docs/product/projects-data-field-inventory.md:468)
+ */
+function toNullableTrim(v: unknown): string | null {
+  const s = trimStr(v);
+  return s ? s : null;
+}
+
+/**
+ * Parse to ISO date (YYYY-MM-DD), discarding timezone info if present.
+ * Strategy:
+ *  - Prefer a direct YYYY[-/.]MM[-/.]DD capture from the input string (no timezone conversion)
+ *  - Fallback to Date parsing and format as UTC YYYY-MM-DD
+ * Spec ref: practical_completion_notified normalization in Task 3
+ *   [docs/product/projects-data-field-inventory.md](../../../docs/product/projects-data-field-inventory.md:468)
+ */
+function toIsoDateOrNull(v: unknown): string | null {
+  const s = trimStr(v);
+  if (!s) return null;
+  // Prefer direct capture to avoid TZ shifts (e.g., '2025-08-20T00:30:00+10:00' -> '2025-08-20')
+  const m = s.match(/^(\d{4})[-\/.](\d{2})[-\/.](\d{2})/);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 10);
+}
+
 function normalizeRow(input: Row): Row {
-  // Per contract: coerce blank numeric counts Residential/Commercial/Essential to 0; trim strings; allow blank DP
+  /**
+   * Stage 6 normalization (Task 3):
+   * - Integers: premises_count, residential, commercial, essential -> non-negative ints; blanks/invalid -> 0
+   * - Floats: latitude, longitude -> float; blanks/invalid -> null
+   * - Strings (trim; blanks -> null): address, suburb, state, build_type, fod_id, relationship_manager, deployment_specialist
+   * - Date: practical_completion_notified -> ISO 'YYYY-MM-DD' (timezone info discarded); blanks/invalid -> null
+   * - Deprecated: development_type, rm_preferred_username omitted from payload and checksum
+   * Spec anchors:
+   *   - Keys/order & checksum: [supabase/migrations/20250817231500_stage4_import.sql](../../migrations/20250817231500_stage4_import.sql:243)
+   *   - Normalization bullets: [docs/product/projects-data-field-inventory.md](../../../docs/product/projects-data-field-inventory.md:468)
+   */
   const out: Row = {};
   for (const k of ROW_KEYS) {
     switch (k) {
+      // Integers
+      case 'premises_count':
       case 'residential':
       case 'commercial':
       case 'essential':
-      case 'premises_count':
         out[k] = toIntOrZero(input[k]);
         break;
+
+      // Floats
       case 'latitude':
       case 'longitude':
         out[k] = toFloatOrNull(input[k]);
         break;
+
+      // Date: normalize to YYYY-MM-DD
+      case 'practical_completion_notified':
+        out[k] = toIsoDateOrNull(input[k]);
+        break;
+
+      // Strings with blanks -> null
+      case 'address':
+      case 'suburb':
+      case 'state':
+      case 'build_type':
+      case 'fod_id':
+      case 'relationship_manager':
+      case 'deployment_specialist':
+        out[k] = toNullableTrim(input[k]);
+        break;
+
+      // Default: trim to string (keeps prior behavior for keys like stage_application, eFscd, developer_class, etc.)
       default:
         out[k] = trimStr(input[k]);
         break;

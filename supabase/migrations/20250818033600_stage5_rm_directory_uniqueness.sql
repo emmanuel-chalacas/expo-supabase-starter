@@ -84,11 +84,11 @@ begin
     v_pred := 'active is true';
   end if;
 
-  execute format($f$
+  execute '
     with d as (
       select normalized_display_name, id
       from public.rm_directory
-      where %s
+      where ' || v_pred || '
     ),
     dups as (
       select normalized_display_name, array_agg(id order by id) as ids, count(*) as c
@@ -96,10 +96,9 @@ begin
       group by normalized_display_name
       having count(*) > 1
     )
-    select string_agg(format('%s [%s]', normalized_display_name, array_to_string(ids, ',')), '; ')
+    select string_agg(normalized_display_name || '' ['' || array_to_string(ids, '','') || '']'', ''; '')
     from dups
-  $f$, v_pred)
-  into v_conflicts;
+  ' into v_conflicts;
 
   if v_conflicts is not null then
     raise exception 'Cannot enforce normalized uniqueness: duplicate active RM names after normalization. Conflicts: %', v_conflicts

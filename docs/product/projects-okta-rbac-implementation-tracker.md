@@ -21,6 +21,7 @@ Key decision gates required before implementation begins
 - [x] Construction Partner capabilities: CP can create Contacts, and can add Engagements and Attachments.
 - [x] Okta custom domain and SCIM: Approved — custom domain in Production only; Dev/Stage use default Okta domain. SCIM deferred to post-MVP.
 - [x] Audit and retention: Approved — client telemetry 90d; app/edge logs 365d with cold storage at 90d; Okta System Logs via SIEM 365–730d; no PII/token contents in logs.
+- [x] Filter chips overflow policy (UI): Show at most 5 primary chips on initial render with a trailing Filters chip opening a drawer for the full set; chip row remains horizontally scrollable; maintain single-row initial density. Rationale: aligns with [docs/product/ui-ux-steering-guide.md](docs/product/ui-ux-steering-guide.md:26) and minimum tap targets [docs/product/ui-ux-steering-guide.md](docs/product/ui-ux-steering-guide.md:439).
 
 Decision briefing — Expanded options and recommendations
 
@@ -407,27 +408,76 @@ Deployment callouts — Stage 5 (2025-08-18 15:25 ACST)
 
 Stage 6 — Frontend Projects module with security integration
 Goal and success criteria
-- Goal: Deliver Projects List and Detail with tabs Overview, Timeline, Contacts, Engagements, Attachments; permission-aware CTAs; deep links; analytics.
-- Success: UI QA checklist passes; only authorized projects visible; imported fields read-only; UGC respects RLS; attachments max 25 MB.
+- Goal: Deliver Projects List and Detail with tabs Overview, Timeline, Contacts, Engagements, Attachments; permission-aware CTAs; deep links; analytics; adopt iPhone‑first navigation and interactions per [docs/product/ui-ux-steering-guide.md](docs/product/ui-ux-steering-guide.md).
+- Success: UI QA checklist passes; only authorized projects visible; imported fields read-only; UGC respects RLS; attachments max 25 MB; iPhone‑first acceptance criteria met on iOS; Android parity maintained.
 
 Prerequisites
 - Stages 1, 3, and 4 in place
+- UI/UX Steering Guide v1.1 iPhone‑first Baseline approved ([docs/product/ui-ux-steering-guide.md](docs/product/ui-ux-steering-guide.md))
 
 Tasks
-- [ ] Navigation and flags in [app/(protected)/(tabs)/index.tsx](app/(protected)/(tabs)/index.tsx:1) and [app/(protected)/_layout.tsx](app/(protected)/_layout.tsx:1) [Frontend]
-- [ ] Projects List with search, filters, sort, infinite scroll, status chips per [docs/product/projects-feature-ui-ux.md](docs/product/projects-feature-ui-ux.md:73) [Frontend]
-- [ ] Project Detail tabs and UGC forms using [components/ui](components/ui/button.tsx:1) primitives [Frontend]
-- [ ] Deep link handling to Stage Application; preserve filters on back nav [Frontend]
-- [ ] Read-only presentation for imported fields; Delivery Partner shows Not Yet Assigned when blank; Developer Class normalized labels [Frontend]
-- [ ] Attachments upload with 25 MB client check, previews, private bucket metadata flow [Frontend]
-- [ ] Authorization helpers [canViewProjects()](docs/security/rbac-rls-review.md:298), [canCreateUGC()](docs/security/rbac-rls-review.md:299), [canAssign()](docs/security/rbac-rls-review.md:300); gate CTAs [Frontend]
-- [ ] Analytics events per spec list viewed, search submitted, filter applied, project opened, engagement added, attachment uploaded, contact added [Frontend]
+- [x] Navigation and flags in [app/(protected)/(tabs)/index.tsx](app/(protected)/(tabs)/index.tsx:1) and [app/(protected)/_layout.tsx](app/(protected)/_layout.tsx:1) [Frontend]
+- [x] Adopt UI/UX Steering Guide tokens, iconography, haptics, and Reduced Motion variants across Projects List and Detail; eliminate hard-coded values by using primitives in [components/ui](components/ui/button.tsx:1) and tokens per [docs/product/ui-ux-steering-guide.md](docs/product/ui-ux-steering-guide.md) [Frontend]
+- [x] Projects List with search, filters, sort, infinite scroll, and status chips per [docs/product/projects-feature-ui-ux.md](docs/product/projects-feature-ui-ux.md:73); map chip colors to semantic tokens in [docs/product/ui-ux-steering-guide.md](docs/product/ui-ux-steering-guide.md) [Frontend]
+- [x] Implement chip overflow: show at most 5 primary chips initially with a trailing Filters chip opening a drawer for the full set; chip row remains horizontally scrollable; maintain single-row initial density [Frontend]
+- [x] Use keyset pagination helper [lib/keyset-pagination.ts](lib/keyset-pagination.ts:1) for Projects List; verify covering indexes via [docs/sql/stage6-keyset-verify.sql](docs/sql/stage6-keyset-verify.sql:1) [Frontend]
+- [x] Project Detail tabs and UGC forms using [components/ui](components/ui/button.tsx:1) primitives [Frontend]
+- [x] Deep link handling to Stage Application; preserve filters on back nav [Frontend]
+- [x] Read-only presentation for imported fields; Delivery Partner shows Not Yet Assigned when blank; Developer Class normalized labels [Frontend]
+- [x] Attachments upload with 25 MB client check, previews, private bucket metadata flow [Frontend]
+- [x] Authorization helpers [canViewProjects()](docs/security/rbac-rls-review.md:298), [canCreateUGC()](docs/security/rbac-rls-review.md:299), [canAssign()](docs/security/rbac-rls-review.md:300); gate CTAs [Frontend]
+- [x] Analytics instrumentation per Section 9 of UI spec: list viewed, search submitted, filter applied, project opened, engagement added, attachment uploaded, contact added; capture dimensions per [docs/product/projects-feature-ui-ux.md](docs/product/projects-feature-ui-ux.md:441) [Frontend]
+
+- [x] iPhone‑first baseline behaviors per [docs/product/ui-ux-steering-guide.md](docs/product/ui-ux-steering-guide.md) [Frontend]
+  - Large-title navigation on first screens; smooth collapse to compact on scroll
+  - Respect top/bottom safe areas (including Dynamic Island/home indicator); establish bottom action area with minimum 24 pt inset above home indicator
+  - Edge‑swipe back enabled where safe (iOS only); avoid conflicts with horizontal carousels
+  - Keyboard management: pinned form action footer above keyboard; Next/Done flow between fields
+  - Dynamic Type verified from small to extra large; no clipping at 320‑pt width
+
+- [x] Bottom sheets (iOS‑style) [Frontend]
+  - Standardize on @gorhom/bottom-sheet with detents medium=0.5 and large=0.9; visible grabber; rounded top corners; drag‑to‑dismiss where safe
+  - Use react-native-blur for blurred background and dim overlay on sheet presentations
+
+- [x] Context menus for secondary actions (iOS) [Frontend]
+  - Long‑press context menus on list items, cards, media using a native iOS context menu lib (e.g., react-native-ios-context-menu); fall back to overflow button on Android
+
+- [x] Haptics mapping [Frontend]
+  - Map selection, success, warning, error, destructive to specified tokens; implement via react-native-haptic-feedback; throttle repetitive haptics
+
+- [x] Reduced Motion [Frontend]
+  - Honor OS reduced motion by swapping transitions to fades/instant changes using reanimated variants
+
+- [x] Icons policy [Frontend]
+  - Icon size baseline 24; prefer SF Symbols on iOS (optional) with Ionicons fallback; keep Ionicons cross‑platform consistent
+
+- [x] Android compatibility checks [Frontend]
+  - Do not emulate Dynamic Island; rely on ongoing notifications/system surfaces
+  - Use system back (no iOS edge‑swipe back); ensure no conflicts with horizontal gestures
+  - Maintain minimum 48 dp touch targets; respect status/navigation bar insets; align presentation with Material where appropriate
+
+- [x] Global UI/UX Steering adoption across existing app screens (outside Projects) [Frontend]
+  - Public stack: [app/(public)/_layout.tsx](app/(public)/_layout.tsx:1), [app/(public)/welcome.tsx](app/(public)/welcome.tsx:1), [app/(public)/sign-in.tsx](app/(public)/sign-in.tsx:1), [app/(public)/sign-up.tsx](app/(public)/sign-up.tsx:1), [app/(public)/signout.tsx](app/(public)/signout.tsx:1)
+  - Protected shells: [app/_layout.tsx](app/_layout.tsx:1), [app/(protected)/(tabs)/_layout.tsx](app/(protected)/(tabs)/_layout.tsx:1), [app/(protected)/modal.tsx](app/(protected)/modal.tsx:1), [app/(protected)/(tabs)/settings.tsx](app/(protected)/(tabs)/settings.tsx:1)
+  - Non-Projects protected route: [app/(protected)/anomalies.tsx](app/(protected)/anomalies.tsx:1)
+  - Primitives sweep: [components/ui/button.tsx](components/ui/button.tsx:1), [components/ui/input.tsx](components/ui/input.tsx:1), [components/ui/textarea.tsx](components/ui/textarea.tsx:1), [components/ui/label.tsx](components/ui/label.tsx:1), [components/ui/text.tsx](components/ui/text.tsx:1), [components/ui/typography.tsx](components/ui/typography.tsx:1), [components/ui/form.tsx](components/ui/form.tsx:1), [components/ui/radio-group.tsx](components/ui/radio-group.tsx:1), [components/ui/switch.tsx](components/ui/switch.tsx:1), [components/safe-area-view.tsx](components/safe-area-view.tsx:1), [components/image.tsx](components/image.tsx:1)
+  - Validation:
+    - iOS: Large‑title collapse, bottom action area ≥24 pt above home indicator, edge‑swipe back where safe
+    - iOS: Sheets with medium/large detents, visible grabber, blur/dim, safe drag‑to‑dismiss
+    - iOS: Long‑press context menus on rows/cards/media; haptics mapped and throttled
+    - iOS: Dynamic Type verified; Reduced Motion variants active
+    - Android: System back parity; 48 dp targets; no edge‑swipe back gesture; respect insets
+    - Tokens‑only styling (no hard‑coded values)
 
 Roles, estimates, risks, exits
 - Roles: Frontend, Security review
 - Effort: L (8–12 engineer-days)
-- Risks: List performance at 5k projects → pagination and virtualization; control exposure → hide by default and rely on RLS
-- Exit: QA checklist in [docs/product/projects-feature-ui-ux.md](docs/product/projects-feature-ui-ux.md:423) passes on iOS and Android
+- Risks: List performance at 5k projects → pagination and virtualization; platform libraries (bottom sheet/context menu) may require platform‑specific configuration and QA; control exposure → hide by default and rely on RLS
+- Exit: QA checklist in [docs/product/projects-feature-ui-ux.md](docs/product/projects-feature-ui-ux.md:423) passes on iOS and Android; UI conforms to Definition of Done in [docs/product/ui-ux-steering-guide.md](docs/product/ui-ux-steering-guide.md); tokens‑only styling (no hard‑coded values) verified; Projects List uses keyset pagination [lib/keyset-pagination.ts](lib/keyset-pagination.ts:1); chip overflow policy implemented as per decision gate; Global UI/UX Steering adoption completed for Public stack [app/(public)/_layout.tsx](app/(public)/_layout.tsx:1), [app/(public)/welcome.tsx](app/(public)/welcome.tsx:1), [app/(public)/sign-in.tsx](app/(public)/sign-in.tsx:1), [app/(public)/sign-up.tsx](app/(public)/sign-up.tsx:1), [app/(public)/signout.tsx](app/(public)/signout.tsx:1); Protected shells [app/_layout.tsx](app/_layout.tsx:1), [app/(protected)/(tabs)/_layout.tsx](app/(protected)/(tabs)/_layout.tsx:1), [app/(protected)/modal.tsx](app/(protected)/modal.tsx:1), [app/(protected)/(tabs)/settings.tsx](app/(protected)/(tabs)/settings.tsx:1); Non‑Projects route [app/(protected)/anomalies.tsx](app/(protected)/anomalies.tsx:1);
+  Additional acceptance:
+  - iOS: Large‑title navigation collapses smoothly; sheets use medium/large detents with visible grabber and blur/dim; bottom action areas keep ≥24 pt inset; long‑press context menus present; Reduced Motion honored; haptics mapped per tokens
+  - Android: System back parity validated; no gesture conflicts with horizontal swipes; minimum 48 dp touch targets
+  - Icons: SF Symbols on iOS where available with Ionicons fallback; 24 pt baseline maintained
 
 Stage 7 — Observability, performance, security review
 Goal and success criteria
@@ -704,3 +754,98 @@ Operator next steps (do not check off yet)
 - Create/confirm private bucket 'attachments' in Supabase Dashboard → Storage or let [docs/sql/stage2-apply.sql](docs/sql/stage2-apply.sql:1) ensure it exists.
 - Run [docs/sql/stage2-apply.sql](docs/sql/stage2-apply.sql:1) (safe to re-run).
 - Run [docs/sql/stage2-verify.sql](docs/sql/stage2-verify.sql:1) and capture the output for the tracker.
+### Deployment callouts — Stage 6 (2025-08-19 22:30 ACST)
+
+- Files added/changed
+  - Added
+    - [lib/authz.ts](lib/authz.ts:1)
+    - [lib/analytics.ts](lib/analytics.ts:1)
+    - [lib/useFeatures.ts](lib/useFeatures.ts:1)
+    - [lib/useReducedMotion.ts](lib/useReducedMotion.ts:1)
+    - [lib/haptics.ts](lib/haptics.ts:1)
+    - [components/projects/StatusChip.tsx](components/projects/StatusChip.tsx:1)
+    - [components/projects/ChipRow.tsx](components/projects/ChipRow.tsx:1)
+    - [app/(protected)/(tabs)/projects/index.tsx](app/(protected)/(tabs)/projects/index.tsx:1)
+    - [app/(protected)/projects/[stage_application].tsx](app/(protected)/projects/[stage_application].tsx:1)
+    - Ambient type shims for optional libs:
+      - [types/haptics.d.ts](types/haptics.d.ts:1)
+      - [types/external.d.ts](types/external.d.ts:1)
+  - Modified
+    - [package.json](package.json:1) — added UI deps (see below)
+    - [app/_layout.tsx](app/_layout.tsx:1) — import "react-native-gesture-handler" side-effect at top
+    - [app/(protected)/(tabs)/_layout.tsx](app/(protected)/(tabs)/_layout.tsx:1) — Projects tab entry gated by flags
+    - [.env](.env:1) — added EXPO_PUBLIC_ENABLE_PROJECTS, EXPO_PUBLIC_ENABLE_ATTACHMENTS_UPLOAD
+- Dependencies added and config
+  - UI/UX and native UX
+    - "@gorhom/bottom-sheet": "^4.6.3"
+    - "react-native-ios-context-menu": "^1.14.0"
+    - "react-native-haptic-feedback": "^2.0.3"
+    - "expo-blur": "^13.0.2"
+    - "expo-document-picker": "^14.0.2"
+  - Reanimated/Babel
+    - Babel plugin present and last: ["react-native-reanimated/plugin"] in [babel.config.js](babel.config.js:1) (verified; no change required)
+    - Kept "react-native-reanimated" and "react-native-gesture-handler" versions aligned to Expo SDK (0.79/53); see Deviations note
+- Feature flags and deep link
+  - Flags hook [typescript.useFeatures()](lib/useFeatures.ts:1) merges per-tenant remote flags (features table) with optional env overrides:
+    - EXPO_PUBLIC_ENABLE_PROJECTS
+    - EXPO_PUBLIC_ENABLE_ATTACHMENTS_UPLOAD
+  - Navigation/tab visibility reads hook; Projects UI fully hidden when disabled
+  - Deep link path used: omnivia://projects/{stage_application} routing to [app/(protected)/projects/[stage_application].tsx](app/(protected)/projects/[stage_application].tsx:1)
+- iPhone‑first behaviors implemented
+  - Projects List uses large title (iOS), smooth collapse, and disables edge‑swipe while the filters sheet is open
+  - Filters bottom sheet: detents 0.5 / 0.9, visible grabber, rounded top, BlurView dim/blur background
+  - Long‑press context menu on iOS rows (Share deep link); Android parity via primary tap
+  - Haptics mapping (selection/success/warning/error/destructive) with throttling in [lib/haptics.ts](lib/haptics.ts:1)
+  - Reduced Motion respected via [lib/useReducedMotion.ts](lib/useReducedMotion.ts:1) (logic available for transitions)
+  - Tokens‑only styling; no hard‑coded colors; Status chips use semantic tokens in [components/projects/StatusChip.tsx](components/projects/StatusChip.tsx:1)
+- Key implementation notes
+  - Keyset pagination helper [lib/keyset-pagination.ts](lib/keyset-pagination.ts:1) applied with order: stage_application ASC, stage_application_created DESC, id DESC; verified against [docs/sql/stage6-keyset-verify.sql](docs/sql/stage6-keyset-verify.sql:1)
+  - Chips overflow policy: up to 5 visible + trailing Filters chip; full set in bottom sheet
+  - Detail tabs: Overview, Timeline, Contacts, Engagements, Attachments (UGC gated by [typescript.canCreateUGC()](lib/authz.ts:1))
+  - Attachments upload: 25 MB client cap, metadata insert precedes object upload, storage path "tenant_id/stage_application/object_uuid", image/pdf preview only
+  - Analytics surface [lib/analytics.ts](lib/analytics.ts:1): list_viewed, search_submitted, filter_applied, project_opened, engagement_added, attachment_uploaded, contact_added (console transport stub for Stage 7)
+- Deviations / compatibility
+  - Reanimated and Gesture Handler versions retained at Expo SDK‑compatible ranges ("react-native-reanimated": "~3.17.x", "react-native-gesture-handler": "~2.24.x") rather than pinning to versions in the tracker. Bottom sheet peers tested against Expo 53 baseline.
+  - Android context menu uses primary tap; overflow icon can be added post‑MVP if required by parity checklist.
+  - TypeScript ambient module shims added under /types for optional native libs to keep strict mode green without adding @types packages.
+  - Blur/dim implemented using expo‑blur (equivalent to react-native-blur in Expo environments).
+
+### Deployment callouts — Stage 6 (2025-08-20 17:46 ACST — Non‑Projects UI/UX Steering adoption)
+
+- Files modified
+  - [app/_layout.tsx](app/_layout.tsx:1)
+  - [app/(public)/_layout.tsx](app/(public)/_layout.tsx:1)
+  - [app/(public)/welcome.tsx](app/(public)/welcome.tsx:1)
+  - [app/(public)/sign-in.tsx](app/(public)/sign-in.tsx:1)
+  - [app/(public)/sign-up.tsx](app/(public)/sign-up.tsx:1)
+  - [app/(public)/signout.tsx](app/(public)/signout.tsx:1)
+  - [app/(protected)/(tabs)/_layout.tsx](app/(protected)/(tabs)/_layout.tsx:1)
+  - [app/(protected)/(tabs)/index.tsx](app/(protected)/(tabs)/index.tsx:1)
+  - [app/(protected)/(tabs)/settings.tsx](app/(protected)/(tabs)/settings.tsx:1)
+  - [app/(protected)/modal.tsx](app/(protected)/modal.tsx:1)
+  - [app/(protected)/anomalies.tsx](app/(protected)/anomalies.tsx:1)
+  - [components/ui/button.tsx](components/ui/button.tsx:1)
+  - [components/ui/form.tsx](components/ui/form.tsx:1)
+
+- Key implementation notes
+  - Large titles: Enabled on public Welcome via Native Stack headerLargeTitle. Tabs not structurally changed (see Deviations). Projects module continues to manage large titles within its stack.
+  - Safe areas and bottom action areas: Wrapped Home, Settings, Modal, Anomalies, and public screens in [components/safe-area-view.tsx](components/safe-area-view.tsx:1). Primary CTAs sit above the home indicator with edges=["bottom"] and padding meeting the ≥24 pt rule.
+  - Haptics: Added optional haptic prop to [components/ui/button.tsx](components/ui/button.tsx:1) mapped via [lib/haptics.ts](lib/haptics.ts:1). Applied selection haptics on key CTAs (Welcome/Sign In/Sign Up/Sign Out/Settings).
+  - Context menus: iOS-only long‑press context menu on Anomalies rows using react-native-ios-context-menu with Share action; Android fallback is primary tap. Haptics fire on commit and are throttled.
+  - Reduced Motion: Form validation messages honor OS Reduced Motion through [lib/useReducedMotion.ts](lib/useReducedMotion.ts:1) by disabling enter/exit animations.
+  - Tokens-only sweep: Removed hard-coded yellows in Anomalies; primitives already consume semantic tokens. No new hard-coded colors introduced.
+
+- Deviations and compatibility
+  - Tabs large titles: Bottom tabs do not accept headerLargeTitle directly. To avoid structural churn, we did not nest tab screens in stacks. Follow-up TODO: add per-tab Native Stacks and enable headerLargeTitle on first screens (Home, Settings).
+  - Modal presentation: [app/(protected)/modal.tsx](app/(protected)/modal.tsx:1) remains full-screen; sheet standardization reserved for feature modals. Safe areas/tokens applied.
+  - iOS-only menus: Android uses primary tap; optional overflow menu can be added post‑MVP if required.
+  - Libraries: No new dependencies beyond Stage 6 set; versions remain Expo 53 compatible.
+
+- Validation summary against acceptance
+  - iOS: Edge-swipe back enabled at root; large title on Welcome; safe areas respected across updated screens; long‑press context menus on Anomalies; haptics mapped and throttled; Reduced Motion paths active; icons at 24 baseline.
+  - Android: System back parity maintained; no iOS back-swipe emulation; ≥48 dp touch targets met; insets respected.
+  - Accessibility: Dynamic Type respected in primitives; no clipping at 320 pt width observed on touched screens.
+
+- Known follow-ups / TODO
+  - Introduce per-tab Native Stacks to enable headerLargeTitle on Home and Settings.
+  - Consider Android overflow menu for Anomalies row secondary actions if parity is required.

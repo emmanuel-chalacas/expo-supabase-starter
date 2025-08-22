@@ -3,6 +3,7 @@ import * as React from "react";
 import { Pressable } from "react-native";
 import { cn } from "@/lib/utils";
 import { TextClassContext } from "@/components/ui/text";
+import * as Haptics from "@/lib/haptics";
 
 const buttonVariants = cva(
 	"group flex items-center justify-center rounded-md web:ring-offset-background web:transition-colors web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-ring web:focus-visible:ring-offset-2",
@@ -59,13 +60,46 @@ const buttonTextVariants = cva(
 	},
 );
 
+type HapticKind = "selection" | "success" | "warning" | "error" | "destructive";
+
 type ButtonProps = React.ComponentPropsWithoutRef<typeof Pressable> &
-	VariantProps<typeof buttonVariants>;
+	VariantProps<typeof buttonVariants> & {
+		haptic?: HapticKind;
+	};
 
 const Button = React.forwardRef<
 	React.ComponentRef<typeof Pressable>,
 	ButtonProps
->(({ className, variant, size, ...props }, ref) => {
+>(({ className, variant, size, haptic, onPress, ...props }, ref) => {
+	const handlePress = React.useCallback(
+		(e: any) => {
+			try {
+				switch (haptic) {
+					case "selection":
+						Haptics.selection();
+						break;
+					case "success":
+						Haptics.success();
+						break;
+					case "warning":
+						Haptics.warning();
+						break;
+					case "error":
+						Haptics.error();
+						break;
+					case "destructive":
+						Haptics.destructive();
+						break;
+				}
+			} catch {
+				// swallow
+			} finally {
+				onPress?.(e);
+			}
+		},
+		[haptic, onPress],
+	);
+
 	return (
 		<TextClassContext.Provider
 			value={buttonTextVariants({
@@ -81,6 +115,7 @@ const Button = React.forwardRef<
 				)}
 				ref={ref}
 				role="button"
+				onPress={handlePress}
 				{...props}
 			/>
 		</TextClassContext.Provider>

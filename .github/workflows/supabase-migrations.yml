@@ -32,6 +32,69 @@ jobs:
           supabase login --token "${SUPABASE_ACCESS_TOKEN}"
           supabase link --project-ref "${SUPABASE_PROJECT_REF}"
 
+      - name: Preflight duplicate projects (tenant_id, stage_application)
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          node scripts/run-sql.js -e "do $do$
+          begin
+            if exists (
+              select 1
+              from public.projects
+              group by tenant_id, stage_application
+              having count(*) > 1
+            ) then
+              raise exception 'Duplicate projects for (tenant_id, stage_application) found';
+            end if;
+          end
+          $do$ language plpgsql;"
+
+      - name: Preflight RM directory normalized uniqueness
+        shell: bash
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          node scripts/run-sql.js -e "do $do$
+          declare v_has_active boolean;
+          begin
+            select exists (
+              select 1 from information_schema.columns
+              where table_schema='public' and table_name='rm_directory' and column_name='active'
+            ) into v_has_active;
+
+            if v_has_active then
+              if exists (
+                select 1
+                from public.rm_directory r
+                where r.active is true
+                group by coalesce(
+                  r.normalized_display_name,
+                  lower(regexp_replace(btrim(r.display_name), '\s+', ' ', 'g'))
+                )
+                having count(*) > 1
+              ) then
+                raise exception 'Duplicate active RM normalized_display_name detected';
+              end if;
+            else
+              if exists (
+                select 1
+                from public.rm_directory r
+                where r.status = 'active'
+                group by coalesce(
+                  r.normalized_display_name,
+                  lower(regexp_replace(btrim(r.display_name), '\s+', ' ', 'g'))
+                )
+                having count(*) > 1
+              ) then
+                raise exception 'Duplicate active RM normalized_display_name detected';
+              end if;
+            end if;
+          end
+          $do$ language plpgsql;"
+
       - name: Push migrations
         run: supabase db push
 

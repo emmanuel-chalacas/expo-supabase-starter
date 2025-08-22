@@ -1,8 +1,8 @@
 # Projects Import Contract — CSV over HTTPS
 
 Author: Kilo Code
-Status: Draft v0.1
-Date: 2025-08-16
+Status: Draft v0.2
+Date: 2025-08-20
 References: [docs/product/projects-feature-prd.md](docs/product/projects-feature-prd.md:1), [docs/product/projects-feature-implementation-plan.md](docs/product/projects-feature-implementation-plan.md:1), [docs/security/rbac-rls-review.md](docs/security/rbac-rls-review.md:1)
 
 1. Purpose
@@ -30,16 +30,22 @@ References: [docs/product/projects-feature-prd.md](docs/product/projects-feature
 - Newlines: \r\n (Windows) or \n (Unix) accepted
 
 4. Header list and field definitions
+- Canonical header order (recommended; case-insensitive match; additional columns ignored):
+  ```
+  stage_application,address,suburb,state,eFscd,build_type,delivery_partner,fod_id,premises_count,residential,commercial,essential,developer_class,latitude,longitude,relationship_manager,deployment_specialist,stage_application_created,developer_design_submitted,developer_design_accepted,issued_to_delivery_partner,practical_completion_notified,practical_completion_certified,delivery_partner_pc_sub,in_service
+  ```
 - stage_application
   - Type: string (14 chars, starts with STG-), required, unique key within Telco tenant
   - Trim whitespace; must match canonical key from PRD
 - address
   - Type: string, required
+- suburb
+  - Type: string, optional
+- state
+  - Type: string, optional
 - eFscd
   - Label: Expected First Service Connection Date (EFSCD)
   - Type: date (YYYY-MM-DD) or datetime (ISO 8601); normalized to date with timezone neutral handling
-- development_type
-  - Allowed: Residential, Commercial, Mixed Use (case-insensitive)
 - build_type
   - Allowed: SDU, MDU, HMDU, MCU (case-insensitive)
 - delivery_partner
@@ -78,6 +84,8 @@ References: [docs/product/projects-feature-prd.md](docs/product/projects-feature
   - Type: date/datetime
 - issued_to_delivery_partner
   - Type: date/datetime
+- practical_completion_notified
+  - Type: date/datetime
 - practical_completion_certified
   - Type: date/datetime
 - delivery_partner_pc_sub
@@ -85,15 +93,31 @@ References: [docs/product/projects-feature-prd.md](docs/product/projects-feature
 - in_service
   - Type: date/datetime
 
+Field mapping to Supabase storage
+| Header | Supabase column | Data type |
+|---|---|---|
+| address | public.projects.address | text |
+| suburb | public.projects.suburb | text |
+| state | public.projects.state | text |
+| practical_completion_notified | public.projects.practical_completion_notified | date |
+
+Inbound identifier mapping
+- relationship_manager → public.projects.relationship_manager (text) with server-side directory resolution via rm_directory; see [supabase/migrations/20250817231500_stage4_import.sql](supabase/migrations/20250817231500_stage4_import.sql:210)
+- rm_preferred_username: not accepted as a header; do not send. RM mapping is handled via relationship_manager only.
+
+Derived fields (not inbound)
+- development_type: derived on server from residential/commercial counts; see rules in [docs/product/projects-data-field-inventory.md](docs/product/projects-data-field-inventory.md:234)
+
 Notes
 - Case-insensitivity for headers and code values (Developer Class, Delivery Partner labels) is applied; whitespace is trimmed for all textual fields.
 - Additional columns are ignored but will be reported back as warnings to aid cleanup.
+- UI: Address displayed as "Address, Suburb State". Development Type is displayed but derived server-side per rules in [docs/product/projects-data-field-inventory.md](docs/product/projects-data-field-inventory.md:234) and MUST NOT be included as a spreadsheet header.
 
 5. Sample CSV (first rows)
 ```
-stage_application,address,eFscd,development_type,build_type,delivery_partner,fod_id,premises_count,residential,commercial,essential,developer_class,latitude,longitude,relationship_manager,deployment_specialist,stage_application_created,developer_design_submitted,developer_design_accepted,issued_to_delivery_partner,practical_completion_certified,delivery_partner_pc_sub,in_service
-STG-000000000001,12 Main St,2025-10-01,Residential,SDU,UGL,FOD-123,50,45,5,0,Class 1,-34.9285,138.6007,RM_JSMITH,DS_AJONES,2025-04-01,2025-04-10,2025-04-15,2025-05-01,2025-08-15,2025-08-01,2025-09-28
-STG-000000000002,34 Park Ave,2025-11-15,Commercial,MDU,,FOD-124,100,0,100,0,Class 3,,,RM_JDOE,DS_BLEE,2025-05-01,2025-05-12,2025-05-20,,2025-10-20,, 
+stage_application,address,suburb,state,eFscd,build_type,delivery_partner,fod_id,premises_count,residential,commercial,essential,developer_class,latitude,longitude,relationship_manager,deployment_specialist,stage_application_created,developer_design_submitted,developer_design_accepted,issued_to_delivery_partner,practical_completion_notified,practical_completion_certified,delivery_partner_pc_sub,in_service
+STG-000000000001,12 Main St,Adelaide,SA,2025-10-01,SDU,UGL,FOD-123,50,45,5,0,Class 1,-34.9285,138.6007,RM_JSMITH,DS_AJONES,2025-04-01,2025-04-10,2025-04-15,2025-05-01,2025-08-10,2025-08-15,2025-08-01,2025-09-28
+STG-000000000002,34 Park Ave,Sydney,NSW,2025-11-15,MDU,,FOD-124,100,0,100,0,Class 3,,,RM_JDOE,DS_BLEE,2025-05-01,2025-05-12,2025-05-20,,,2025-10-20,,
 ```
 
 6. Server-side normalization and validation
@@ -104,8 +128,10 @@ STG-000000000002,34 Park Ave,2025-11-15,Commercial,MDU,,FOD-124,100,0,100,0,Clas
 - Validations
   - stage_application required and format enforced (STG- prefix and length)
   - Dates parsed with strict ISO 8601; if time present, converted to date for date-only fields
-  - Integers validated non-negative
-  - Unknown development_type/build_type values rejected with per-row error
+  - Practical Completion Notified parsed as date; timezone discarded in merge (timestamptz::date), see [docs/product/projects-data-field-inventory.md](docs/product/projects-data-field-inventory.md:232)
+  - Integers validated non-negative; blanks → 0 for residential, commercial, essential, premises_count
+  - Latitude/Longitude parsed as floats (nullable); blanks → null
+  - Unknown build_type values rejected with per-row error; development_type is derived server-side from residential/commercial counts and is never included in the spreadsheet
 - Mapping
   - ds_directory: deployment_specialist → Okta user id; unknown values produce anomaly
   - rm_directory: relationship_manager → Okta user id; unknown values produce anomaly

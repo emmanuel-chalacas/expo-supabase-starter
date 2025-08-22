@@ -1,8 +1,8 @@
 # Roles, Permissions, and Enforcement — Projects Feature RBAC, Claims, and RLS Reference
 
 Author: Kilo Code
-Status: Draft v0.1
-Date: 2025-08-15
+Status: Draft v0.3
+Date: 2025-08-19
 Sources: [docs/product/projects-feature-implementation-plan.md](docs/product/projects-feature-implementation-plan.md:1), [docs/product/projects-feature-ui-ux.md](docs/product/projects-feature-ui-ux.md:1), [docs/security/okta-oidc-supabase.md](docs/security/okta-oidc-supabase.md:1)
 
 Purpose
@@ -49,7 +49,7 @@ Capability matrix (summary)
 - Telco Tenant Relationship Manager: Read Projects (assigned only), UGC (on assigned), Assign (no), Admin Corrections (no).
 - Delivery Partner Tenant Admin: Read Projects (their ORG and SUB_ORG), UGC (yes), Assign (their SUB_ORG), User Management (their tenant via Okta requests), Admin Corrections (no), Org Hierarchy Mgmt (create SUB_ORG), Provisioning Requests (own tenant).
 - Delivery Partner Program Manager: Read Projects (their ORG and SUB_ORG), UGC (yes), Assign (their SUB_ORG), Admin Corrections (no).
-- Delivery Partner Construction Partner: Read Projects (SUB_ORG assigned subset), UGC (engagements and attachments; contacts optional), Assign (no).
+- Delivery Partner Construction Partner: Read Projects (SUB_ORG assigned subset), UGC (engagements, attachments, and contacts), Assign (no).
 
 3. Okta claims schema and mapping
 Required claims in ID token
@@ -333,7 +333,7 @@ flowchart TD
 9. Open questions for confirmation
 - Relationship Manager mapping: Confirm import field header used for RM mapping (projects.relationship_manager) and ownership/stewardship of rm_directory.
 - DP to subcontractor allocation: Confirm that DP Admin and DP PM can allocate projects to SUB_ORG without Telco approval, and that Telco can view all allocations.
-- Construction Partner capabilities: Confirm whether CP can add contacts or only engagements and attachments.
+- Construction Partner capabilities: CP can add contacts in addition to engagements and attachments.
 - Admin Corrections: Confirm which imported fields, if any, Telco Admin can correct; default is none until a future stage.
 - DS assign rights: Should Telco DS be allowed to reassign themselves or suggest assignment only?
 
@@ -359,5 +359,6 @@ flowchart TD
 - dp_cp
 
 Change log
+- v0.3 Enabled contacts creation for Delivery Partner Construction Partner; updated capability matrix and resolved CP contacts open question; synchronized with Projects UI spec v0.5; date updated to 2025-08-19.
 - v0.2 Model B2 integrated: RM scope set to assigned-only; added SUB_ORG creation rights for telco_admin and dp_admin; added provisioning requests via Okta Workflows; clarified assignment sources and updated RLS for telco_rm.
 - v0.1 Initial RBAC, claims, and RLS reference; adds subcontractor hierarchy and membership templates; aligned with Projects plan and UI spec.

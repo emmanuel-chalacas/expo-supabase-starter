@@ -12,55 +12,70 @@
  * client-only starting point.
  */
 
-export type ProjectsCursor = { stage_application: string; created_at: string; id: string };
+export type ProjectsCursor = {
+	stage_application: string;
+	created_at: string;
+	id: string;
+};
 
 // Base64URL helpers with environment fallbacks (browser/Node/React Native)
 function base64UrlEncode(input: string): string {
-  // Try global btoa first (browser/Expo)
-  if (typeof (globalThis as any).btoa === 'function') {
-    const b64 = (globalThis as any).btoa(input);
-    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-  }
-  // Fallback to Buffer (Node)
-  if (typeof (globalThis as any).Buffer !== 'undefined') {
-    const b64 = (globalThis as any).Buffer.from(input, 'utf8').toString('base64');
-    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-  }
-  throw new Error('No base64 encoder available in this environment');
+	// Try global btoa first (browser/Expo)
+	if (typeof (globalThis as any).btoa === "function") {
+		const b64 = (globalThis as any).btoa(input);
+		return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+	}
+	// Fallback to Buffer (Node)
+	if (typeof (globalThis as any).Buffer !== "undefined") {
+		const b64 = (globalThis as any).Buffer.from(input, "utf8").toString(
+			"base64",
+		);
+		return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+	}
+	throw new Error("No base64 encoder available in this environment");
 }
 
 function base64UrlDecode(input: string): string {
-  const b64 = input.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(input.length / 4) * 4, '=');
-  if (typeof (globalThis as any).atob === 'function') {
-    return (globalThis as any).atob(b64);
-  }
-  if (typeof (globalThis as any).Buffer !== 'undefined') {
-    return (globalThis as any).Buffer.from(b64, 'base64').toString('utf8');
-  }
-  throw new Error('No base64 decoder available in this environment');
+	const b64 = input
+		.replace(/-/g, "+")
+		.replace(/_/g, "/")
+		.padEnd(Math.ceil(input.length / 4) * 4, "=");
+	if (typeof (globalThis as any).atob === "function") {
+		return (globalThis as any).atob(b64);
+	}
+	if (typeof (globalThis as any).Buffer !== "undefined") {
+		return (globalThis as any).Buffer.from(b64, "base64").toString("utf8");
+	}
+	throw new Error("No base64 decoder available in this environment");
 }
 
 export function encodeProjectsCursor(cursor: ProjectsCursor): string {
-  return base64UrlEncode(JSON.stringify(cursor));
+	return base64UrlEncode(JSON.stringify(cursor));
 }
 
 export function decodeProjectsCursor(s: string): ProjectsCursor {
-  const raw = base64UrlDecode(s);
-  let obj: any;
-  try {
-    obj = JSON.parse(raw);
-  } catch {
-    throw new Error('Invalid cursor: not valid JSON');
-  }
-  if (
-    !obj ||
-    typeof obj.stage_application !== 'string' ||
-    typeof obj.created_at !== 'string' ||
-    typeof obj.id !== 'string'
-  ) {
-    throw new Error('Invalid cursor: expected { stage_application, created_at, id } as strings');
-  }
-  return { stage_application: obj.stage_application, created_at: obj.created_at, id: obj.id };
+	const raw = base64UrlDecode(s);
+	let obj: any;
+	try {
+		obj = JSON.parse(raw);
+	} catch {
+		throw new Error("Invalid cursor: not valid JSON");
+	}
+	if (
+		!obj ||
+		typeof obj.stage_application !== "string" ||
+		typeof obj.created_at !== "string" ||
+		typeof obj.id !== "string"
+	) {
+		throw new Error(
+			"Invalid cursor: expected { stage_application, created_at, id } as strings",
+		);
+	}
+	return {
+		stage_application: obj.stage_application,
+		created_at: obj.created_at,
+		id: obj.id,
+	};
 }
 
 // PostgREST filter value quoting for special characters.
@@ -69,9 +84,9 @@ export function decodeProjectsCursor(s: string): ProjectsCursor {
 // escape internal quotes by doubling them, e.g. foo"bar -> "foo""bar".
 // This is conservative; values with other edge cases may still require a server RPC.
 function quoteForPostgrestValue(v: string): string {
-  const needsQuotes = /[(),\s"]/g.test(v);
-  if (!needsQuotes) return v;
-  return `"${v.replace(/"/g, '""')}"`;
+	const needsQuotes = /[(),\s"]/g.test(v);
+	if (!needsQuotes) return v;
+	return `"${v.replace(/"/g, '""')}"`;
 }
 
 /**
@@ -84,34 +99,38 @@ function quoteForPostgrestValue(v: string): string {
  *   OR (stage_application = :sa AND stage_application_created = :created AND id < :id)
  */
 export function buildProjectsOrFilter(cursor: ProjectsCursor): string {
-  const sa = quoteForPostgrestValue(cursor.stage_application);
-  const created = quoteForPostgrestValue(cursor.created_at);
-  const id = quoteForPostgrestValue(cursor.id);
+	const sa = quoteForPostgrestValue(cursor.stage_application);
+	const created = quoteForPostgrestValue(cursor.created_at);
+	const id = quoteForPostgrestValue(cursor.id);
 
-  // Using PostgREST expression grammar for .or():
-  // - Comma between top-level terms is OR
-  // - and(a,b,...) groups AND terms
-  const term1 = `stage_application.gt.${sa}`;
-  const term2 = `and(stage_application.eq.${sa},stage_application_created.lt.${created})`;
-  const term3 = `and(stage_application.eq.${sa},stage_application_created.eq.${created},id.lt.${id})`;
-  return [term1, term2, term3].join(',');
+	// Using PostgREST expression grammar for .or():
+	// - Comma between top-level terms is OR
+	// - and(a,b,...) groups AND terms
+	const term1 = `stage_application.gt.${sa}`;
+	const term2 = `and(stage_application.eq.${sa},stage_application_created.lt.${created})`;
+	const term3 = `and(stage_application.eq.${sa},stage_application_created.eq.${created},id.lt.${id})`;
+	return [term1, term2, term3].join(",");
 }
 
 /**
  * Apply Projects keyset ordering and predicate (when provided) to a Supabase builder.
  * The builder is expected to be the result of supabase.from('projects').select(...)
  */
-export function applyProjectsKeyset(builder: any, pageSize: number, cursor?: ProjectsCursor): any {
-  let q = builder
-    .order('stage_application', { ascending: true, nullsFirst: false })
-    .order('stage_application_created', { ascending: false, nullsFirst: false })
-    .order('id', { ascending: false, nullsFirst: false })
-    .limit(pageSize);
+export function applyProjectsKeyset(
+	builder: any,
+	pageSize: number,
+	cursor?: ProjectsCursor,
+): any {
+	let q = builder
+		.order("stage_application", { ascending: true, nullsFirst: false })
+		.order("stage_application_created", { ascending: false, nullsFirst: false })
+		.order("id", { ascending: false, nullsFirst: false })
+		.limit(pageSize);
 
-  if (cursor) {
-    q = q.or(buildProjectsOrFilter(cursor));
-  }
-  return q;
+	if (cursor) {
+		q = q.or(buildProjectsOrFilter(cursor));
+	}
+	return q;
 }
 
 // Example (not executed):

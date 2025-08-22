@@ -9,7 +9,28 @@ alter table public.contacts enable row level security;
 alter table public.engagements enable row level security;
 alter table public.attachments_meta enable row level security;
 -- storage.objects is managed by the Storage extension; enable RLS defensively
-alter table if exists storage.objects enable row level security;
+-- Only attempt if current_user owns the table; otherwise skip to avoid permission errors.
+do $rls$
+declare
+  v_owner text;
+begin
+  select r.rolname
+  into v_owner
+  from pg_roles r
+  join pg_class c on c.relowner = r.oid
+  join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname = 'storage'
+    and c.relname = 'objects';
+
+  if v_owner is null then
+    raise notice 'Skipping RLS enable on storage.objects; table not found';
+  elsif v_owner = current_user then
+    execute 'alter table storage.objects enable row level security';
+  else
+    raise notice 'Skipping RLS enable on storage.objects; owner is %, current_user is %', v_owner, current_user;
+  end if;
+end
+$rls$;
 
 -- 1) public.projects
 -- Drop existing project-scoped policies and recreate using helper

@@ -29,6 +29,7 @@ export default function SignOutScreen() {
 			<Button
 				size="lg"
 				variant="default"
+				haptic="selection"
 				accessibilityLabel="Go to Sign In"
 				onPress={() => {
 					try {

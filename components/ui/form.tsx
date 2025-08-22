@@ -10,6 +10,7 @@ import {
 } from "react-hook-form";
 import { View } from "react-native";
 import Animated, { FadeInDown, FadeOut } from "react-native-reanimated";
+import { useReducedMotion } from "@/lib/useReducedMotion";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup } from "@/components/ui/radio-group";
@@ -136,6 +137,7 @@ const FormMessage = React.forwardRef<
 >(({ className, children, ...props }, ref) => {
 	const { error, formMessageNativeID } = useFormField();
 	const body = error ? String(error?.message) : children;
+	const reduced = useReducedMotion();
 
 	if (!body) {
 		return null;
@@ -143,8 +145,8 @@ const FormMessage = React.forwardRef<
 
 	return (
 		<Animated.Text
-			entering={FadeInDown}
-			exiting={FadeOut.duration(275)}
+			entering={reduced ? undefined : FadeInDown}
+			exiting={reduced ? undefined : FadeOut.duration(180)}
 			ref={ref}
 			nativeID={formMessageNativeID}
 			className={cn("text-sm font-medium text-destructive", className)}

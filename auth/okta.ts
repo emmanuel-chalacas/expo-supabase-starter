@@ -31,6 +31,7 @@ export interface OktaAuthResult {
 	accessToken?: string;
 	discovery: AuthSession.DiscoveryDocument;
 	redirectUri: string;
+	nonce?: string;
 }
 
 export async function oktaAuthorize(): Promise<OktaAuthResult> {
@@ -38,6 +39,10 @@ export async function oktaAuthorize(): Promise<OktaAuthResult> {
 	const clientId = getEnv("EXPO_PUBLIC_OKTA_CLIENT_ID");
 	const redirectUri = getRedirectUri();
 
+	const nonce =
+		typeof (AuthSession as any).generateRandom === "function"
+			? (AuthSession as any).generateRandom(16)
+			: Math.random().toString(36).slice(2);
 	const discovery = await AuthSession.fetchDiscoveryAsync(issuer);
 
 	const request = new AuthSession.AuthRequest({
@@ -47,6 +52,7 @@ export async function oktaAuthorize(): Promise<OktaAuthResult> {
 		// Include 'groups' when available so Okta can return groups in userinfo.
 		// Critical item 2: we will derive roles from groups/app_roles and mirror to DB.
 		scopes: ["openid", "profile", "email", "groups"],
+		extraParams: { nonce },
 	});
 
 	const result = await request.promptAsync(discovery);
@@ -96,16 +102,17 @@ export async function oktaAuthorize(): Promise<OktaAuthResult> {
 		accessToken,
 		discovery,
 		redirectUri,
+		nonce,
 	};
 }
 
 /**
-	* Critical item 2 (Stage 5): Fetch Okta userinfo and normalize for post-login sync.
-	* - Returns profileJson with key OIDC claims and all raw claims spread in (no secrets logged).
-	* - Returns roles derived from 'groups' or 'app_roles' claims (normalized, deduped, lowercased).
-	* - Safe to call repeatedly; if no access token or fetch failure, returns null.
-	* Idempotency note: the downstream RPC upserts profile and reconciles roles.
-	*/
+ * Critical item 2 (Stage 5): Fetch Okta userinfo and normalize for post-login sync.
+ * - Returns profileJson with key OIDC claims and all raw claims spread in (no secrets logged).
+ * - Returns roles derived from 'groups' or 'app_roles' claims (normalized, deduped, lowercased).
+ * - Safe to call repeatedly; if no access token or fetch failure, returns null.
+ * Idempotency note: the downstream RPC upserts profile and reconciles roles.
+ */
 export interface OktaUserInfoResult {
 	profileJson: {
 		sub: string;
@@ -117,10 +124,14 @@ export interface OktaUserInfoResult {
 }
 
 function normalizeToStringArray(v: unknown): string[] {
-	if (Array.isArray(v)) return v.filter((x) => typeof x === "string") as string[];
+	if (Array.isArray(v))
+		return v.filter((x) => typeof x === "string") as string[];
 	if (typeof v === "string") {
 		// Accept comma or space-separated fallbacks
-		const parts = v.split(/[,\s]+/g).map((s) => s.trim()).filter(Boolean);
+		const parts = v
+			.split(/[,\s]+/g)
+			.map((s) => s.trim())
+			.filter(Boolean);
 		return parts;
 	}
 	return [];
@@ -144,7 +155,9 @@ function deriveRolesFromClaims(raw: any): string[] {
 	return out;
 }
 
-export async function fetchOktaUserInfo(accessToken?: string): Promise<OktaUserInfoResult | null> {
+export async function fetchOktaUserInfo(
+	accessToken?: string,
+): Promise<OktaUserInfoResult | null> {
 	if (!accessToken) return null;
 	const issuer = getEnv("EXPO_PUBLIC_OKTA_ISSUER");
 	const discovery = await AuthSession.fetchDiscoveryAsync(issuer);
@@ -212,10 +225,15 @@ export async function buildEndSessionUrl(params: {
 		process.env.EXPO_PUBLIC_OKTA_END_SESSION_REDIRECT ??
 		`${scheme}://signout`;
 
-	if (!params.redirectUri && !process.env.EXPO_PUBLIC_OKTA_END_SESSION_REDIRECT) {
+	if (
+		!params.redirectUri &&
+		!process.env.EXPO_PUBLIC_OKTA_END_SESSION_REDIRECT
+	) {
 		if (typeof __DEV__ !== "undefined" && __DEV__) {
 			// Dev-only: indicate fallback is being used (no secrets).
-			console.warn("[auth] end-session redirect not configured; defaulting to omnivia://signout");
+			console.warn(
+				"[auth] end-session redirect not configured; defaulting to omnivia://signout",
+			);
 		}
 	}
 
@@ -249,7 +267,9 @@ export async function buildEndSessionUrl(params: {
  * Note: This is best-effort; cookie-based server sessions may not be fully cleared
  * from a background fetch on native. UI must not block on this call.
  */
-export async function callEndSessionWithTimeout(url: string): Promise<{ ok: boolean; url: string }> {
+export async function callEndSessionWithTimeout(
+	url: string,
+): Promise<{ ok: boolean; url: string }> {
 	const timeoutMs = 6000;
 
 	const attempt = async (): Promise<boolean> => {
@@ -305,7 +325,12 @@ export async function callEndSessionWithTimeout(url: string): Promise<{ ok: bool
  */
 export function verifyIdTokenClaims(
 	idToken: string,
-	opts?: { issuer?: string; audience?: string | string[]; skewSec?: number; now?: number },
+	opts?: {
+		issuer?: string;
+		audience?: string | string[];
+		skewSec?: number;
+		now?: number;
+	},
 ): { ok: true; payload: any } | never {
 	const enabled = process.env.EXPO_PUBLIC_ENABLE_LOCAL_ID_VERIFY === "true";
 
@@ -365,8 +390,14 @@ export function verifyIdTokenClaims(
 		}
 	}
 
-	const skewSec = typeof opts?.skewSec === "number" ? Math.max(0, Math.floor(opts.skewSec)) : 300;
-	const nowSec = typeof opts?.now === "number" ? Math.floor(opts.now) : Math.floor(Date.now() / 1000);
+	const skewSec =
+		typeof opts?.skewSec === "number"
+			? Math.max(0, Math.floor(opts.skewSec))
+			: 300;
+	const nowSec =
+		typeof opts?.now === "number"
+			? Math.floor(opts.now)
+			: Math.floor(Date.now() / 1000);
 
 	const normSec = (v: any): number | null => {
 		if (v === undefined || v === null) return null;
@@ -411,7 +442,9 @@ function _decodeJwtSegment(seg: string): any {
 
 /** Internal: normalize base64url to base64 padding */
 function _b64urlToB64(s: string): string {
-	let out = String(s || "").replace(/-/g, "+").replace(/_/g, "/");
+	let out = String(s || "")
+		.replace(/-/g, "+")
+		.replace(/_/g, "/");
 	const pad = out.length % 4;
 	if (pad === 2) out += "==";
 	else if (pad === 3) out += "=";
@@ -421,7 +454,8 @@ function _b64urlToB64(s: string): string {
 
 /** Internal: small, dependency-free base64 decoder to ASCII/UTF-8 string (sufficient for JWT JSON) */
 function _b64DecodeToString(b64: string): string {
-	const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+	const alphabet =
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	const table = new Int16Array(256).fill(-1);
 	for (let i = 0; i < alphabet.length; i++) table[alphabet.charCodeAt(i)] = i;
 	let buffer = 0;
@@ -443,7 +477,7 @@ function _b64DecodeToString(b64: string): string {
 	// Best-effort UTF-8 decode
 	try {
 		// Decode UTF-8 bytes sequence to string
-		// eslint-disable-next-line no-control-regex
+
 		return decodeURIComponent(
 			out.replace(/[%\x80-\xFF]/g, (ch) => {
 				const code = ch.charCodeAt(0);

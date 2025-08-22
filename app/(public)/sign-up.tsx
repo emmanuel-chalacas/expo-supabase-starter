@@ -49,6 +49,7 @@ function OktaSignUp() {
 			<Button
 				size="lg"
 				variant="default"
+				haptic="selection"
 				accessibilityLabel="Continue with Okta"
 				onPress={async () => {
 					try {
@@ -144,6 +145,7 @@ function LegacySignUp() {
 			<Button
 				size="default"
 				variant="default"
+				haptic="selection"
 				onPress={form.handleSubmit(onSubmit)}
 				disabled={form.formState.isSubmitting}
 				className="web:m-4"

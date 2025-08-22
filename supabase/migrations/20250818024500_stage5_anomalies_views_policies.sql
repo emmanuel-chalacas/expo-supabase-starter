@@ -97,7 +97,7 @@ begin
   ) into v_role_ok;
 
   if not v_role_ok then
-    raise insufficient_privilege using message 'operator/admin role required';
+    raise insufficient_privilege using message = 'operator/admin role required';
   end if;
 
   return query
@@ -166,7 +166,7 @@ begin
   ) into v_role_ok;
 
   if not v_role_ok then
-    raise insufficient_privilege using message 'operator/admin role required';
+    raise insufficient_privilege using message = 'operator/admin role required';
   end if;
 
   return query

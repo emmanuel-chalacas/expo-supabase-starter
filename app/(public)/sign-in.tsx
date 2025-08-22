@@ -32,13 +32,14 @@ function OktaSignIn() {
 	const [loading, setLoading] = useState(false);
 
 	return (
-		<SafeAreaView className="flex-1 bg-background p-4" edges={["bottom"]}>
+		<SafeAreaView className="flex-1 bg-background p-6" edges={["bottom"]}>
 			<View className="flex-1 gap-4 web:m-4">
 				<H1 className="self-start ">Sign In</H1>
 			</View>
 			<Button
 				size="lg"
 				variant="default"
+				haptic="selection"
 				accessibilityLabel="Continue with Okta"
 				onPress={async () => {
 					try {
@@ -79,7 +80,7 @@ function LegacySignIn() {
 	}
 
 	return (
-		<SafeAreaView className="flex-1 bg-background p-4" edges={["bottom"]}>
+		<SafeAreaView className="flex-1 bg-background p-6" edges={["bottom"]}>
 			<View className="flex-1 gap-4 web:m-4">
 				<H1 className="self-start ">Sign In</H1>
 				<Form {...form}>
@@ -119,6 +120,7 @@ function LegacySignIn() {
 			<Button
 				size="default"
 				variant="default"
+				haptic="selection"
 				onPress={form.handleSubmit(onSubmit)}
 				disabled={form.formState.isSubmitting}
 				className="web:m-4"

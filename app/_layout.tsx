@@ -1,3 +1,4 @@
+import "react-native-gesture-handler";
 import "../global.css";
 
 import { Stack } from "expo-router";
@@ -29,7 +30,7 @@ function RootNavigator() {
 	}
 
 	return (
-		<Stack screenOptions={{ headerShown: false, gestureEnabled: false }}>
+		<Stack screenOptions={{ headerShown: false, gestureEnabled: true }}>
 			<Stack.Protected guard={!!session}>
 				<Stack.Screen name="(protected)" />
 			</Stack.Protected>

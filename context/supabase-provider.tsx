@@ -58,7 +58,7 @@ export async function oktaSignIn(): Promise<void> {
 			// Dev-only redacted log; do not include token contents.
 			if (typeof __DEV__ !== "undefined" && __DEV__) {
 				const code = String(e?.message || "IDV_CLAIMS_ERROR").split(":")[0];
-				// eslint-disable-next-line no-console
+				 
 				console.warn(`[auth][local-id-verify] signin claims check failed: ${code}`);
 			}
 			// Non-destructive path: do not sign the user out; Supabase remains source of truth.
@@ -220,7 +220,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 				} catch (e: any) {
 					if (typeof __DEV__ !== "undefined" && __DEV__) {
 						const code = String(e?.message || "IDV_CLAIMS_ERROR").split(":")[0];
-						// eslint-disable-next-line no-console
+						 
 						console.warn(`[auth][local-id-verify] refresh claims check failed: ${code}`);
 					}
 					// Non-destructive path by design

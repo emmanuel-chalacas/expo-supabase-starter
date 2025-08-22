@@ -94,4 +94,110 @@ Where to adjust project reference
   - Set it in [supabase/config.toml](supabase/config.toml) under project_id = "your-project-ref".
   - Or re-run “yarn supa:link --project-ref YOUR_PROJECT_REF”.
 
+Stage 6 — Projects Field Alignment Rollout
+
+Prerequisites
+- Migrations present:
+  - [supabase/migrations/20250820100000_stage6_projects_field_alignment.sql](supabase/migrations/20250820100000_stage6_projects_field_alignment.sql:1)
+  - [supabase/migrations/20250820101500_stage6_functions_alignment.sql](supabase/migrations/20250820101500_stage6_functions_alignment.sql:1)
+- Edge Function updated in repo: [supabase/functions/import-projects/index.ts](supabase/functions/import-projects/index.ts:25)
+- UI changes merged:
+  - [app/(protected)/(tabs)/projects/index.tsx](app/(protected)/(tabs)/projects/index.tsx:58)
+  - [app/(protected)/projects/[stage_application].tsx](app/(protected)/projects/[stage_application].tsx:35)
+
+Rollout order (must follow to avoid checksum mismatch)
+1) Apply DB schema (Stage 6 columns/indexes):
+```
+supabase db push
+```
+or:
+```
+supabase db execute --file supabase/migrations/20250820100000_stage6_projects_field_alignment.sql
+```
+
+2) Deploy Edge Function (importer):
+```
+supabase functions deploy import-projects
+```
+
+3) Apply functions alignment (checksum + merge):
+```
+supabase db execute --file supabase/migrations/20250820101500_stage6_functions_alignment.sql
+```
+
+4) App/UI refresh:
+```
+npx expo start -c
+```
+Optional OTA:
+```
+npx expo export
+```
+(or project-standard publish)
+
+5) Verification:
+- Schema + merge:
+```
+supabase db execute --file docs/sql/stage6-field-alignment-verify.sql
+```
+- Status smoke addendum:
+```
+supabase db execute --file docs/sql/stage5-status-smoke-tests.sql
+```
+
+Coordination and notes
+- Steps 2 and 3 must be released as a pair to keep importer/SQL checksum in sync per [docs/product/projects-data-field-inventory.md](docs/product/projects-data-field-inventory.md:288).
+- No downtime expected; all changes are additive or CREATE OR REPLACE.
+
+Rollback plan
+- Re-deploy previous Edge Function if needed:
+```
+supabase functions deploy import-projects --no-verify-jwt
+```
+(if previously used)
+- Re-apply previous functions migration if you keep versioned files.
+- DB columns introduced in Stage 6 can remain unused (additive safe).
+- If exporters still send deprecated headers, see importer runbook for mitigation: [docs/security/supabase-imports-runbook.md](docs/security/supabase-imports-runbook.md:1)
 That’s it — you can now manage schema and verification end‑to‑end with the CLI and Yarn scripts, without copy/pasting into the Supabase portal.
+Stage 7 — Projects List RPC Rollout
+
+Prerequisites
+- Migration present:
+  - [supabase/migrations/20250820220000_stage7_projects_list_rpc.sql](supabase/migrations/20250820220000_stage7_projects_list_rpc.sql:1)
+- Repo linked and CLI configured as documented above.
+
+Rollout order
+1) Apply DB migration (function only; additive):
+```
+supabase db push
+```
+or:
+```
+supabase db execute --file supabase/migrations/20250820220000_stage7_projects_list_rpc.sql
+```
+
+2) Verification:
+```
+supabase db execute --file docs/sql/stage7-list-rpc-verify.sql
+```
+
+3) App/UI refresh:
+```
+npx expo start -c
+```
+Optional OTA:
+```
+npx expo export
+```
+
+4) App/UI:
+- UI changes for Task 2/3 will consume rpc_projects_list for “Newest” and Timeline updates.
+
+Notes
+- Security INVOKER ensures RLS on public.projects governs visibility.
+- No downtime expected; function is CREATE OR REPLACE.
+
+Completion criteria
+- New migration file exists with the function.
+- Remediation plan updated with “Deployment notes — Task 1”.
+- Run-sheet updated with “Stage 7 — Projects List RPC Rollout”.

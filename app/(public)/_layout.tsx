@@ -7,8 +7,26 @@ export default function PublicLayout() {
 	const { colorScheme } = useColorScheme();
 
 	return (
-		<Stack screenOptions={{ headerShown: false, gestureEnabled: false }}>
-			<Stack.Screen name="welcome" />
+		<Stack screenOptions={{ headerShown: false, gestureEnabled: true }}>
+			<Stack.Screen
+				name="welcome"
+				options={{
+					headerShown: true,
+					headerLargeTitle: true,
+					headerTitle: "Welcome",
+					headerStyle: {
+						backgroundColor:
+							colorScheme === "dark"
+								? colors.dark.background
+								: colors.light.background,
+					},
+					headerTintColor:
+						colorScheme === "dark"
+							? colors.dark.foreground
+							: colors.light.foreground,
+					gestureEnabled: true,
+				}}
+			/>
 			<Stack.Screen
 				name="sign-up"
 				options={{
@@ -47,7 +65,7 @@ export default function PublicLayout() {
 					gestureEnabled: true,
 				}}
 			/>
-<Stack.Screen name="signout" />
+			<Stack.Screen name="signout" />
 		</Stack>
 	);
 }

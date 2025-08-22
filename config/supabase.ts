@@ -10,8 +10,10 @@ const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY as string;
 
 // Safe validation logs (dev only). Do not log secrets.
 if (__DEV__) {
-	const urlLooksValid = /^https:\/\/.*\.supabase\.co$/i.test(String(supabaseUrl));
-	// eslint-disable-next-line no-console
+	const urlLooksValid = /^https:\/\/.*\.supabase\.co$/i.test(
+		String(supabaseUrl),
+	);
+
 	console.log("[Supabase] URL valid:", urlLooksValid);
 }
 

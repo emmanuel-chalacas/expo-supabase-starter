@@ -22,7 +22,7 @@ function OktaWelcome() {
 	const [loading, setLoading] = useState(false);
 
 	return (
-		<SafeAreaView className="flex flex-1 bg-background p-4">
+		<SafeAreaView className="flex flex-1 bg-background p-6">
 			<View className="flex flex-1 items-center justify-center gap-y-4 web:m-4">
 				<H1 className="text-center">Welcome to Omnivia</H1>
 			</View>
@@ -30,6 +30,7 @@ function OktaWelcome() {
 				<Button
 					size="lg"
 					variant="default"
+					haptic="selection"
 					accessibilityLabel="Continue with Okta"
 					disabled={loading}
 					onPress={async () => {
@@ -57,7 +58,7 @@ function LegacyWelcome() {
 			: require("@/assets/icon-dark.png");
 
 	return (
-		<SafeAreaView className="flex flex-1 bg-background p-4">
+		<SafeAreaView className="flex flex-1 bg-background p-6">
 			<View className="flex flex-1 items-center justify-center gap-y-4 web:m-4">
 				<Image source={appIcon} className="w-16 h-16 rounded-xl" />
 				<H1 className="text-center">Welcome to Expo Supabase Starter</H1>
@@ -70,6 +71,7 @@ function LegacyWelcome() {
 				<Button
 					size="default"
 					variant="default"
+					haptic="selection"
 					onPress={() => {
 						router.push("/sign-up");
 					}}
@@ -79,6 +81,7 @@ function LegacyWelcome() {
 				<Button
 					size="default"
 					variant="secondary"
+					haptic="selection"
 					onPress={() => {
 						router.push("/sign-in");
 					}}

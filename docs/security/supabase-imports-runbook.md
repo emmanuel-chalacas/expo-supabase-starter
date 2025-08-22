@@ -282,3 +282,53 @@ Observability
   ```
 - Verification queries:
   - See [docs/sql/stage5-retention-verify.sql](../sql/stage5-retention-verify.sql:1) to confirm pg_cron installation, scheduled job presence, preview deletion candidates, and recent stats.
+## Stage 6 Importer Coordination
+
+Contract header changes (producer side)
+- Remove: development_type, rm_preferred_username
+- Add: suburb, state, practical_completion_notified
+- Grouping guidance:
+  - Keep “address, suburb, state” together for UI composition
+  - Place Practical Completion Notified immediately before Practical Completion Certified
+  - Reference: [docs/product/projects-import-contract.md](../product/projects-import-contract.md:32)
+
+Exporter update steps (Power Automate/SharePoint)
+- Update the export action to emit the new headers and remove deprecated ones.
+- Produce a pilot CSV and validate column presence and casing match the contract.
+- Confirm no extraneous/deprecated headers remain (development_type, rm_preferred_username).
+
+Function deployment coordination
+- Deploy importer (Task 3) and functions alignment (Task 4) together to avoid checksum mismatches:
+  - Importer: [supabase/functions/import-projects/index.ts](../../supabase/functions/import-projects/index.ts:25)
+  - Functions alignment migration: [supabase/migrations/20250820101500_stage6_functions_alignment.sql](../../supabase/migrations/20250820101500_stage6_functions_alignment.sql:1)
+
+Verification workflow
+- After exporter change and function deployment:
+  - Confirm a staging entry is created with updated keys (suburb, state, practical_completion_notified) in staging_imports.raw.
+  - Run:
+    ```
+    supabase db execute --file docs/sql/stage6-field-alignment-verify.sql
+    ```
+    Also see reference script: [docs/sql/stage6-field-alignment-verify.sql](../sql/stage6-field-alignment-verify.sql:1)
+  - Spot check persisted fields:
+    ```sql
+    select
+      stage_application,
+      address,
+      suburb,
+      state,
+      development_type,
+      build_type,
+      practical_completion_notified
+    from public.projects
+    order by created_at desc
+    limit 10;
+    ```
+
+Anomalies and legacy exporter handling
+- If a legacy exporter still sends deprecated headers, importer ignores development_type and rm_preferred_username; ensure pilot validation before full switch.
+- Continue monitoring import_anomalies for mapping issues unrelated to header changes.
+
+Rollback
+- Temporarily re-add old headers in the exporter if needed; server remains tolerant.
+- No database rollback required; Stage 6 columns are additive and safe to leave in place.
