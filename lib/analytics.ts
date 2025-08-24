@@ -25,6 +25,101 @@ export const AnalyticsEvents = {
 	contact_added: "contact_added",
 } as const;
 
+/**
+ * Phase 7 — UI taxonomy events and helpers
+ */
+export const UIEvents = {
+	ui_project_detail_viewed: "ui_project_detail_viewed",
+	ui_section_expanded: "ui_section_expanded",
+	ui_section_collapsed: "ui_section_collapsed",
+	ui_jump_to_section: "ui_jump_to_section",
+	ui_engagement_add_started: "ui_engagement_add_started",
+	ui_engagement_added: "ui_engagement_added",
+	ui_contact_add_started: "ui_contact_add_started",
+	ui_contact_added: "ui_contact_added",
+	ui_attachment_upload_started: "ui_attachment_upload_started",
+	ui_attachment_uploaded: "ui_attachment_uploaded",
+} as const;
+
+export type UIEvent = (typeof UIEvents)[keyof typeof UIEvents];
+
+/**
+ * Allowed UI context dimensions for analytics (sanitized aggressively; no PII).
+ */
+export interface UIContextDims {
+	role?: string; // normalized/enum-like; no emails/usernames
+	delivery_partner_org?: string; // short code/slug, not display name if possible
+	deployment_specialist_user?: boolean; // boolean flag instead of identity
+	stage_application?: string;
+	section_name?: "overview" | "timeline" | "contacts" | "engagements" | "attachments";
+	filters_applied?: string; // e.g., "kind:site_visit|sort:newest"
+	sort_option?: string; // e.g., "newest" | "oldest"
+	source?: "chip" | "deeplink" | "button";
+}
+
+/**
+ * Sanitize UI dims:
+ * - Drop undefined/null
+ * - Reject values that look like emails/phone numbers
+ * - Trim strings to 64 chars
+ * - Only keep keys defined by UIContextDims
+ */
+function sanitizeUIContextDims(
+	dims?: UIContextDims,
+): Partial<UIContextDims> | undefined {
+	if (!dims) return undefined;
+
+	const allowedKeys: Array<keyof UIContextDims> = [
+		"role",
+		"delivery_partner_org",
+		"deployment_specialist_user",
+		"stage_application",
+		"section_name",
+		"filters_applied",
+		"sort_option",
+		"source",
+	];
+
+	const out: Partial<UIContextDims> = {};
+	const emailRe = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
+	const phoneRe = /^\+?[0-9\s().-]{6,}$/;
+
+	for (const k of allowedKeys) {
+		const v = (dims as Record<string, unknown>)[k as string];
+		if (v === undefined || v === null) continue;
+
+		if (typeof v === "string") {
+			let s = v.trim();
+			if (!s) continue;
+			// Reject email/phone looking values
+			if (emailRe.test(s) || phoneRe.test(s)) continue;
+			// Compact whitespace and enforce limit
+			s = s.replace(/\s+/g, " ");
+			if (s.length > 64) s = s.slice(0, 64);
+			(out as Record<string, unknown>)[k as string] = s;
+		} else if (typeof v === "boolean") {
+			(out as Record<string, unknown>)[k as string] = v;
+		} else {
+			// Ignore non-string/boolean values
+		}
+	}
+
+	return Object.keys(out).length ? out : undefined;
+}
+
+/**
+ * [typescript.trackUI(event: UIEvent, dims?: UIContextDims)](lib/analytics.ts:1)
+ * Wrapper over [typescript.track()](lib/analytics.ts:50) that enforces Phase 7 UI taxonomy and sanitization.
+ */
+export function trackUI(event: UIEvent, dims?: UIContextDims): void {
+	try {
+		const safe = sanitizeUIContextDims(dims);
+		track(event as AnalyticsEventName, safe as Record<string, unknown> | undefined);
+	} catch {
+		// Never throw from telemetry
+	}
+}
+
 export type AnalyticsEventName = keyof typeof AnalyticsEvents | string;
 
 type AnalyticsProps = Record<string, unknown> | undefined;

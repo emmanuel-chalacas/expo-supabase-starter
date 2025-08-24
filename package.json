@@ -69,6 +69,7 @@
     "react-native-get-random-values": "^1.11.0",
     "react-native-haptic-feedback": "^2.0.3",
     "react-native-ios-context-menu": "^1.14.0",
+    "react-native-context-menu-view": "^3.0.0",
     "react-native-reanimated": "~3.17.3",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "4.11.1",

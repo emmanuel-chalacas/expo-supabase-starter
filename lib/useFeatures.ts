@@ -20,6 +20,7 @@ import { supabase } from "@/config/supabase";
 type FeaturesState = {
 	ENABLE_PROJECTS: boolean;
 	ENABLE_ATTACHMENTS_UPLOAD: boolean;
+	DETAIL_UNIFIED: boolean;
 	loading: boolean;
 };
 
@@ -38,6 +39,17 @@ export function useFeatures(): FeaturesState {
 		| undefined;
 	const rawEnvAttachments = (process.env as any)
 		?.EXPO_PUBLIC_ENABLE_ATTACHMENTS_UPLOAD as string | undefined;
+
+	// Phase 1 — Unified detail flag: env default only (remote overrides when present)
+	const rawEnvDetailUnified = (process.env as any)
+		?.EXPO_PUBLIC_DETAIL_UNIFIED as string | undefined;
+	const envDetailUnifiedDefault =
+		typeof rawEnvDetailUnified === "string"
+			? (() => {
+					const s = rawEnvDetailUnified.trim().toLowerCase();
+					return s === "true" || s === "1";
+				})()
+			: false;
 
 	// Only treat env values as overrides when they are explicitly provided.
 	const envProjectsOverride =
@@ -137,20 +149,25 @@ export function useFeatures(): FeaturesState {
 	const value = useMemo<FeaturesState>(() => {
 		const remoteProjects = remote?.ENABLE_PROJECTS ?? false;
 		const remoteAttachments = remote?.ENABLE_ATTACHMENTS_UPLOAD ?? false;
+		const remoteDetailUnified = remote?.DETAIL_UNIFIED;
 
 		const ENABLE_PROJECTS =
 			envProjectsOverride !== null ? envProjectsOverride : remoteProjects;
 		const ENABLE_ATTACHMENTS_UPLOAD =
-			envAttachmentsOverride !== null
-				? envAttachmentsOverride
-				: remoteAttachments;
+			envAttachmentsOverride !== null ? envAttachmentsOverride : remoteAttachments;
+
+		// Phase 1 policy for DETAIL_UNIFIED:
+		// Fallback order: remote (if present) -> env default -> false
+		const DETAIL_UNIFIED =
+			typeof remoteDetailUnified === "boolean" ? remoteDetailUnified : envDetailUnifiedDefault;
 
 		return {
 			ENABLE_PROJECTS,
 			ENABLE_ATTACHMENTS_UPLOAD,
+			DETAIL_UNIFIED,
 			loading,
 		};
-	}, [remote, envProjectsOverride, envAttachmentsOverride, loading, tenantId]);
+	}, [remote, envProjectsOverride, envAttachmentsOverride, envDetailUnifiedDefault, loading, tenantId]);
 
 	return value;
 }

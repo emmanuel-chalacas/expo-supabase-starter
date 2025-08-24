@@ -382,3 +382,91 @@ Rollout and rollback
   - Verify app_roles claim appears in ID token and groups are mapped; confirm post-login RPC [fn_sync_profile_and_roles](supabase/migrations/20250818021000_stage5_post_login_sync.sql:12) executes (provider calls are debounced on refresh)
 - Logout does not return
   - Confirm EXPO_PUBLIC_OKTA_END_SESSION_REDIRECT=omnivia://signout and that Okta discovery includes end_session_endpoint
+### K. Supabase Auth — Create first Vendor Admin and Telco Tenant Admin (Dashboard path)
+
+Use this fallback when Okta is not yet configured or you want to seed initial admins with Supabase email/password. You can switch to Okta later by flipping the feature flag; existing roles and RLS continue to work.
+
+Prerequisites
+- Stage 1 bootstrap schema is applied: [docs/sql/omni-bootstrap.sql](docs/sql/omni-bootstrap.sql:1).
+- Environment contains Supabase keys and the Okta UI flag is disabled (temporarily):
+  - EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY, EXPO_PUBLIC_ENABLE_OKTA_AUTH=false in [.env](.env:1).
+- If you will sign in with email/password, ensure Email provider is enabled in Supabase; see [docs/security/supabase-setup.md](docs/security/supabase-setup.md:29).
+
+Step 1 — Disable Okta UI in the app
+- Set EXPO_PUBLIC_ENABLE_OKTA_AUTH=false in [.env](.env:3).
+- Restart the Expo dev server so [SignIn](app/(public)/sign-in.tsx:27) renders the legacy email/password form instead of the Okta button.
+- Protected routing remains enforced by [app/_layout.tsx](app/_layout.tsx:34).
+
+Step 2 — Create the two admin users (Supabase Dashboard)
+- Supabase Dashboard → Authentication → Users → Add user
+- Vendor Admin:
+  - Email: your chosen vendor admin email (e.g., vendor.admin@yourdomain)
+  - Check “Email confirmed”
+  - Optionally set a temporary password for immediate login
+- Telco Tenant Admin:
+  - Email: telco.admin@yourdomain
+  - Check “Email confirmed”
+  - Optionally set a temporary password
+- After creating each user, open the user’s row and copy its User ID (UUID). You’ll need it below. If needed, you can find it via SQL later:
+  - select id from auth.users where email = 'vendor.admin@yourdomain';
+
+Step 3 — Seed RBAC roles via Table Editor (no SQL)
+- Dashboard → Table Editor → public.user_roles → Insert row:
+  - Vendor Admin: user_id = <UUID>, role = 'vendor_admin'
+  - Telco Tenant Admin: user_id = <UUID>, role = 'telco_admin'
+- Note: (user_id, role) is the primary key; duplicates are prevented.
+
+Step 4 — Seed profile rows via Table Editor (no SQL)
+- Dashboard → Table Editor → public.user_profiles → Insert row for each admin:
+  - user_id: the UUID you copied
+  - okta_sub: placeholder for legacy auth, e.g., legacy:vendor.admin@yourdomain
+  - okta_user_id: vendor.admin@yourdomain (use the email)
+  - tenant_id: 'TELCO' for the Telco Tenant Admin; for Vendor Admin you may set 'TELCO' or leave null (Vendor Admin has global visibility in RLS).
+  - partner_org_id: null
+  - sub_partner_org_id: null
+
+Step 5 — Alternative: SQL you can paste into Supabase SQL Editor
+Replace the emails before running. Safe to re-run; uses upserts.
+
+```sql
+-- BEGIN: seed first admins (replace emails)
+with vendor as (
+  select id as user_id from auth.users where email = 'vendor.admin@yourdomain'
+), telco as (
+  select id as user_id from auth.users where email = 'telco.admin@yourdomain'
+)
+-- profiles
+insert into public.user_profiles (user_id, okta_sub, okta_user_id, tenant_id)
+select v.user_id, 'legacy:vendor.admin@yourdomain', 'vendor.admin@yourdomain', 'TELCO' from vendor v
+on conflict (user_id) do update
+  set okta_sub = excluded.okta_sub,
+      okta_user_id = excluded.okta_user_id,
+      tenant_id = excluded.tenant_id;
+
+insert into public.user_profiles (user_id, okta_sub, okta_user_id, tenant_id)
+select t.user_id, 'legacy:telco.admin@yourdomain', 'telco.admin@yourdomain', 'TELCO' from telco t
+on conflict (user_id) do update
+  set okta_sub = excluded.okta_sub,
+      okta_user_id = excluded.okta_user_id,
+      tenant_id = excluded.tenant_id;
+
+-- roles
+insert into public.user_roles (user_id, role)
+select v.user_id, 'vendor_admin' from vendor v
+on conflict (user_id, role) do nothing;
+
+insert into public.user_roles (user_id, role)
+select t.user_id, 'telco_admin' from telco t
+on conflict (user_id, role) do nothing;
+-- END
+```
+
+Step 6 — Test in the app
+- Launch the app → go to Sign In. With Okta disabled, [SignIn](app/(public)/sign-in.tsx:27) renders the legacy form.
+- Sign in with each admin to confirm protected tabs render; routing is enforced via [app/_layout.tsx](app/_layout.tsx:34).
+- Validate data access and RLS behavior against the RBAC reference: [docs/security/rbac-rls-review.md](docs/security/rbac-rls-review.md:1).
+
+Step 7 — Moving to Okta later
+- Re-enable the flag in [.env](.env:3): EXPO_PUBLIC_ENABLE_OKTA_AUTH=true.
+- Follow Sections E/F in this worksheet and the integration guide [docs/security/okta-oidc-supabase.md](docs/security/okta-oidc-supabase.md:1).
+- Okta-backed identities will mirror into the same tables on first login; Vendor/Telco admin roles remain authoritative in DB.

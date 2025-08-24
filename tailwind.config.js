@@ -24,10 +24,8 @@ module.exports = {
 					DEFAULT: "hsl(var(--destructive))",
 					foreground: "hsl(var(--destructive-foreground))",
 				},
-				muted: {
-					DEFAULT: "hsl(var(--muted))",
-					foreground: "hsl(var(--muted-foreground))",
-				},
+				muted: "#E5E7EB",
+				"muted-foreground": "#6B7280",
 				accent: {
 					DEFAULT: "hsl(var(--accent))",
 					foreground: "hsl(var(--accent-foreground))",
@@ -40,6 +38,9 @@ module.exports = {
 					DEFAULT: "hsl(var(--card))",
 					foreground: "hsl(var(--card-foreground))",
 				},
+				success: "#22C55E",
+				warning: "#F59E0B",
+				danger: "#EF4444",
 			},
 		},
 	},

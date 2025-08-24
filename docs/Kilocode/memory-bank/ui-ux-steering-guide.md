@@ -1,5 +1,5 @@
 # Omnivia UI and UX Steering Guide
-Version 1.1
+Version 1.2
 
 Purpose
 - This document defines the overarching UI and UX philosophy for Omnivia. It guides how we choose colors, typography, spacing, motion, and interaction patterns across every screen and component. It is the single source of truth for designers and engineers to ensure the product feels sleek, minimalist, premium, and consistently iOS-native in spirit.
@@ -83,12 +83,14 @@ Top --> Nav --> Body --> CTA --> Bottom
 ## 2. Brand and Theme
 
 Colors
-- Primary (Brand Anchor): Deep Navy #0A2540
+- Primary (Brand Anchor): Tech Navy #0D2E52
   - Usage: headers, primary surfaces in dark contexts, key text on light surfaces, emphasis backgrounds.
-- Secondary (Base Surface): Light Beige #F5F0E6
-  - Usage: light-mode app background, cards and neutral surfaces for a warm premium tone.
+- Primary Alt (Brand Navy Alt): #184873
+  - Usage: large header bands, elevated dark cards, and navigation chrome in light mode to reduce visual weight; complements primary.
+- Secondary (Base Surface): Porcelain #F2F4F7
+  - Usage: light-mode app background, cards, and neutral surfaces for a crisp, modern neutral with a slight cool tint.
 - Accent (Action and Focus): iOS Blue #007AFF
-  - Justification: iOS-native accent that pairs well with navy and beige, evokes clarity and modernity.
+  - Justification: iOS-native accent that pairs well with tech navy and cool neutrals, evokes clarity and modernity.
   - Usage: primary call-to-action, focused input states, active navigation, links.
   - Dark-mode support: lighten accent for dark surfaces when needed (for example ~ #4DA3FF) to preserve contrast.
 - Neutral Palette (Text, Dividers, Shadows)
@@ -139,11 +141,11 @@ Spacing and Shape
 
 Surfaces
 - Light mode
-  - Background: Secondary Beige #F5F0E6
+  - Background: Porcelain #F2F4F7
   - Card: White or near-white with subtle shadow
   - Elevated surfaces: subtle elevation with soft shadow
 - Dark mode
-  - Background: Deep Navy #0A2540 or a near-navy tone
+  - Background: Tech Navy #0D2E52 or a near-navy tone
   - Card: Slightly lighter navy or very dark gray
   - Shadows: replace with overlays and subtle borders for clarity
 
@@ -386,15 +388,17 @@ Content Guidelines
 ## Appendix A. Token Catalog v1.0
 
 Color Tokens
-- color.brand.primary: #0A2540
-- color.brand.onPrimary: #F5F0E6
+- color.brand.primary: #0D2E52
+- color.brand.primaryAlt: #184873
+- color.brand.onPrimary: #FFFFFF
 - color.accent.default: #007AFF
 - color.accent.onAccent: #FFFFFF
-- color.surface.background.light: #F5F0E6
+- color.accent.darkSurfaceVariant: #4DA3FF
+- color.surface.background.light: #F2F4F7
 - color.surface.card.light: #FFFFFF
-- color.surface.background.dark: #0A2540
-- color.surface.card.dark: #132B4A
-- color.text.primary.light: #0A2540
+- color.surface.background.dark: #0D2E52
+- color.surface.card.dark: #184873
+- color.text.primary.light: #0D2E52
 - color.text.secondary.light: #4B5565
 - color.text.primary.dark: #FFFFFF
 - color.text.secondary.dark: #E3E8EF
@@ -475,13 +479,13 @@ Iconography
 ## Appendix B. Accessible Color Pairs
 
 - Light mode
-  - Text on Beige: Navy #0A2540 on #F5F0E6 meets AA for small text
-  - Accent on Beige: #007AFF on #F5F0E6 meets AA for small text
-  - Danger on Beige: #EF4444 on #F5F0E6 meets AA for small text
+  - Text on Porcelain: Tech Navy #0D2E52 on #F2F4F7 meets AA for small text
+  - Accent on Porcelain: #007AFF on #F2F4F7 meets AA for small text
+  - Danger on Porcelain: #EF4444 on #F2F4F7 meets AA for small text
 - Dark mode
-  - Text on Navy: White #FFFFFF on #0A2540 meets AA for small text
-  - Accent on Navy: Prefer lightened Accent (~ #4DA3FF) for small text AA
-  - Borders on Navy: #364152 provides subtle but visible separation
+  - Text on Tech Navy: White #FFFFFF on #0D2E52 meets AA for small text
+  - Accent on Tech Navy: Prefer lightened Accent (~ #4DA3FF) for small text AA
+  - Borders on Tech Navy: #364152 provides subtle but visible separation
 
 Always validate with automated contrast tools and manual visual checks.
 
